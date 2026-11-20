@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rebar3D — Learn reinforcement detailing in 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{--bg:#fff;--panel:#f7f7f5;--line:#d8d8d3;--ink:#171716;--mute:#70706a;--soft:#ecece7;--shadow:0 8px 24px rgba(20,20,18,.08);color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:13px/1.45 'IBM Plex Sans','Segoe UI',Arial,sans-serif;font-variant-numeric:tabular-nums}
+#app{display:grid;grid-template-columns:330px minmax(420px,1fr) 390px;height:100dvh;min-height:600px}
+aside{background:var(--panel);overflow:auto;padding:18px}
+#left{border-right:1px solid var(--line)}#right{border-left:1px solid var(--line)}
+h1{font-size:17px;line-height:1.2;font-weight:600;letter-spacing:-.01em;margin:0 0 14px}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);font-weight:600;margin:20px 0 8px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-bottom:14px;background:var(--bg)}
+.tabs button{flex:1;border:0;border-right:1px solid var(--line);background:var(--bg);padding:8px 3px;font:inherit;font-size:11px;cursor:pointer;color:var(--mute);transition:.15s ease}
+.tabs button:last-child{border-right:0}.tabs button:hover{color:var(--ink);background:var(--soft)}
+.tabs button.on{background:var(--ink);color:#fff}
+button{font:inherit}
+.btn{border:1px solid var(--line);background:var(--bg);min-height:32px;padding:6px 10px;border-radius:6px;cursor:pointer;color:var(--ink);transition:border-color .15s,background .15s,transform .15s}
+.btn:hover{border-color:#a6a69d;transform:translateY(-1px)}.btn:active{transform:translateY(0)}.btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:7px 7px;text-align:right;border-bottom:1px solid var(--soft);white-space:nowrap}
+th{font-weight:600;font-size:11px;color:var(--mute);border-bottom:1px solid var(--line);background:rgba(247,247,245,.98)}
+th:first-child,td:first-child{text-align:left}
+tr.sel td{background:#e8e8e2;font-weight:600}#list tbody tr{cursor:pointer}#list tbody tr:hover td{background:var(--soft)}
+.cell-edit{width:100%;min-width:58px;min-height:28px;padding:4px 5px;border-radius:4px;font-size:12px}.geometry-edit{width:66px;min-width:58px}.schedule-geometry{min-width:230px}.schedule-geometry>div{display:flex;gap:4px}
+.validation-link{display:block;width:100%;border:0;background:transparent;color:var(--ink);padding:5px;text-align:left;text-decoration:underline;text-decoration-style:dotted;cursor:pointer;font:inherit}.validation-link:hover{background:var(--soft)}.validation-summary{margin:8px 0;padding:8px;border:1px solid var(--line);border-radius:7px;background:#fff}.validation-summary h2{margin-top:0}
+.row{display:flex;gap:7px;margin:10px 0}.row .btn{flex:1}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid h3{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:600;margin:10px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+label{display:flex;flex-direction:column;gap:4px;color:var(--mute);font-size:11px;font-weight:500}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 8px;width:100%;min-height:34px}
+input:focus,select:focus{border-color:var(--ink);outline:none;box-shadow:0 0 0 3px rgba(23,23,22,.06)}
+#view{position:relative;min-width:0;background:#fff}
+#vp{position:absolute;inset:0}#vp canvas{display:block}
+#bar{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none;padding:7px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}
+#bar>*{pointer-events:auto}
+#assemblyGrid{display:none;align-items:center;gap:8px}#assembly.on+#assemblyGrid{display:flex}#assemblyGrid label{min-width:58px}#assemblyGrid select{min-height:26px;padding:3px 5px}
+#info{position:absolute;left:14px;bottom:14px;color:var(--mute);font-size:12px;pointer-events:none;background:rgba(255,255,255,.88);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+#legend{position:absolute;right:14px;bottom:14px;font-size:11px;color:var(--ink);display:flex;flex-direction:column;gap:4px;pointer-events:none;background:rgba(255,255,255,.94);padding:8px 10px;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}
+select{font:inherit}.xl{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px}.xl input{width:95px;padding:0;border:0;accent-color:#111;box-shadow:none}
+input.bad{border:2px solid var(--ink);background:var(--soft)}input.warn{border:1px dashed var(--ink)}input.auto{background:var(--soft);color:var(--mute)}
+#alabels{position:absolute;inset:0;overflow:hidden;pointer-events:none}.al{position:absolute;pointer-events:none;font-size:11px;white-space:nowrap;background:rgba(255,255,255,.94);border:1px solid var(--line);padding:2px 6px;border-radius:4px;box-shadow:0 3px 10px rgba(20,20,18,.06);transform:translate(-50%,-50%)}.al i{display:inline-block;width:8px;height:8px;margin-right:4px;border-radius:2px}
+#report{display:none}
+#mobileNav{display:none}
+#teaching{margin:12px 0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+#teaching h2{margin:0 0 8px}
+#buildStageLabel{font-weight:600;color:var(--ink);min-width:90px}
+#challengePanel{display:none;margin:12px 0;padding:12px;border:2px solid #c33b2f;border-radius:8px;background:#fff}
+#challengeAnswers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#challengeFeedback{margin-top:10px}
+#worked{margin:12px 0;border:1px solid var(--line);border-radius:7px;padding:8px}
+#worked summary{font-weight:600;cursor:pointer}
+#assignmentSheet{display:none}
+.projector-mode{--bg:#fff;--panel:#f1f1ee;--ink:#000;--mute:#333;--line:#555;--soft:#e1e1dc}
+.projector-mode{font-size:16px}
+.projector-mode h1{font-size:24px}.projector-mode h2{font-size:16px}.projector-mode .btn{min-height:44px;font-size:15px}.projector-mode label,.projector-mode .ck{font-size:15px}
+body.print-assignment #assignmentSheet{display:none}
+body.print-assignment #app,body.print-assignment #mobileNav{display:none!important}
+body.embed-mode #app{display:block;height:100dvh;min-height:0}
+body.embed-mode #left,body.embed-mode #right,body.embed-mode #bar{display:none!important}
+body.embed-mode #mobileNav{display:none!important}
+body.embed-mode #view{height:100%;width:100%;border:0}
+body.embed-mode #vp{pointer-events:none}
+body.embed-mode #info{font-size:14px;color:#111}
+body.embed-mode #legend{font-size:13px}
+.challenge-mode #left>:not(h1,#challengePanel),.challenge-mode #right,.challenge-mode #bar,.challenge-mode #legend{display:none!important}
+.challenge-mode #left{display:block!important;max-height:none}
+.challenge-mode #challengePanel{display:block}
+@media print{@page{size:auto;margin:14mm}@page assignment{size:A4 portrait;margin:14mm}body{font-size:10pt;background:#fff;color:#111}#app{display:block;height:auto;min-height:0}#left,#view,#right>*:not(#report){display:none!important}#right{display:block;border:0;padding:0;overflow:visible;background:#fff}#report{display:block!important}#report h1{font-size:20pt;margin-bottom:4mm}#report h2{margin-top:7mm;color:#111}#report table{font-size:8pt;page-break-inside:auto}#report tr{page-break-inside:avoid}#report th{position:static;background:#eee}#report .report-section{page-break-inside:auto}
+body.print-assignment{page:assignment;font:11pt/1.35 Arial,sans-serif}body.print-assignment #assignmentSheet{display:block!important}body.print-assignment #assignmentSheet h1{font-size:22pt;margin:0 0 5mm}body.print-assignment #assignmentSheet h2{font-size:13pt;margin:6mm 0 2mm}body.print-assignment #assignmentSheet table{font-size:10pt}body.print-assignment #assignmentSheet th{position:static;background:#eee}body.print-assignment #assignmentSheet .write-line{height:12mm;border-bottom:1px solid #555}}
+.sw{display:inline-block;width:10px;height:10px;margin-right:6px;border-radius:2px}#mlabel{position:absolute;display:none;pointer-events:none;background:var(--ink);color:#fff;padding:4px 8px;border-radius:5px;font-size:12px;white-space:nowrap;transform:translate(-50%,-140%)}
+.ck{padding:7px 0;border-bottom:1px solid var(--soft);font-size:12px}.ck.bad{color:#151514}.ck.bad b{background:var(--ink);color:#fff;padding:2px 5px;border-radius:3px}
+#legend i{display:inline-block;width:18px;height:4px;margin-right:5px;vertical-align:middle}
+.kv{display:grid;grid-template-columns:1fr auto;gap:5px 10px;margin:8px 0 14px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.kv span:nth-child(odd){color:var(--mute)}.kv span:nth-child(even){text-align:right;font-weight:600}.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.scroll table th{position:sticky;top:0;z-index:1}.tot td{font-weight:600;border-top:1px solid var(--ink)}
+@media(max-width:1250px){#app{grid-template-columns:300px minmax(380px,1fr) 340px}.grid{gap:8px}}
+@media(max-width:1100px){#mobileNav{display:flex;position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);padding:6px;gap:6px}#mobileNav .btn{flex:1;min-height:44px;font-weight:600}#app{display:flex;flex-direction:column;height:auto;min-height:100dvh}.tabs{max-width:520px}#view{order:-1;flex:none;height:48vh;min-height:300px;border-bottom:1px solid var(--line);touch-action:none}aside{width:100%;border:0;padding:14px;overflow:visible}#left,#right{display:none}#app[data-mobile-panel="input"] #left,#app[data-mobile-panel="results"] #right,#app[data-mobile-panel="checks"] #right{display:block}#app[data-mobile-panel="results"] #checksPanel{display:none}#app[data-mobile-panel="checks"] #right>:not(#qtitle,#qsel){display:none!important}#app[data-mobile-panel="checks"] #resultsPanel{display:none}#vp canvas{touch-action:none}#bar{max-height:42%;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;align-items:flex-start;touch-action:pan-x}#bar>div,#bar>.xl{flex:none}#bar .btn{min-height:44px;white-space:nowrap}#bar .xl{min-height:44px}#bar .xl input{min-height:34px}.scroll{max-width:100%;overflow-x:auto}.scroll table{width:max-content;min-width:100%}.schedule-geometry{min-width:230px}.projector-mode #mobileNav{font-size:16px}}
+@media(max-width:600px){aside{padding:12px}.row{flex-wrap:wrap}.row>label{flex:1 1 43%!important}#view{height:44vh;min-height:260px}.grid{grid-template-columns:1fr}.tabs button{font-size:12px;min-height:44px}#bar{left:6px;right:6px;top:6px;padding:4px;gap:4px}.xl{width:auto}.xl input{flex:1}#challengeAnswers{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav id="mobileNav" aria-label="Mobile panels"><button class="btn on" data-panel="input">Input</button><button class="btn" data-panel="results">Results</button><button class="btn" data-panel="checks">Checks</button></nav>
+<div id="app" data-mobile-panel="input">
+  <aside id="left">
+    <h1>Rebar3D <span style="color:var(--mute)">· Learn reinforcement detailing in 3D</span></h1>
+    <section id="teaching">
+      <h2>Teaching tools</h2>
+      <label>Textbook example<select id="preset"><option value="">Choose an example</option><option value="ss-beam">Simply supported beam</option><option value="cantilever">Cantilever beam</option><option value="column-ties">Column with ties</option><option value="one-way-slab">One-way slab</option></select></label>
+      <div class="row"><button class="btn" id="loadPreset">Load example</button><button class="btn" id="startChallenge">Start hidden-answer exercise</button></div>
+      <div class="row"><button class="btn" id="buildToggle">Build-up mode: off</button><button class="btn" id="projectorToggle">Class / projector mode: off</button></div>
+      <label>Build-up step<div class="row" style="align-items:center"><input id="buildStage" type="range" min="0" max="4" value="4"><span id="buildStageLabel">Complete cage</span></div></label>
+      <button class="btn" id="printAssignment">Print one-page assignment</button>
+    </section>
+    <section id="challengePanel"><h2 id="challengeTitle">Schedule exercise</h2><p id="challengePrompt"></p><div id="challengeAnswers"></div><div class="row"><button class="btn" id="checkChallenge">Check my schedule</button><button class="btn" id="challengePrint">Print assignment</button><button class="btn" id="endChallenge">End exercise</button></div><div id="challengeFeedback" aria-live="polite"></div></section>
+    <div class="tabs" id="tabs"></div><div class="row"><label style="flex:1">Display lengths<select id="units"><option value="mm">Millimetres (mm)</option><option value="in">Inches (in)</option></select></label><label style="flex:1">Concrete grade<select id="fck"><option value="20">M20</option><option value="25">M25</option><option value="30">M30</option><option value="35">M35</option><option value="40">M40 and above</option></select></label><label style="flex:1">Steel grade<select id="fy"><option value="415">Fe415</option><option value="500">Fe500</option><option value="550">Fe550</option></select></label><label style="flex:1">Seismic zone<select id="seismicZone"><option value="Unspecified">Not assessed</option><option value="II">Zone II</option><option value="III">Zone III</option><option value="IV">Zone IV</option><option value="V">Zone V</option></select></label></div><div class="row"><label style="flex:1">Concrete ₹/Cum<input id="rc" type="number" min="0"></label><label style="flex:1">Shuttering ₹/Sqm<input id="rs" type="number" min="0"></label><label style="flex:1">Steel ₹/kg<input id="rk" type="number" min="0"></label></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin:10px 0">
+      <label style="grid-column:1/-1">Find member<input id="search" type="search" placeholder="Search marks and dimensions"></label>
+      <label>Sort by<select id="sort"><option value="index">Schedule order</option><option value="mark">Mark</option><option value="size">Size</option><option value="nos">Member count</option><option value="steel">Steel weight</option></select></label>
+      <label>Show<select id="filter"><option value="all">All members</option><option value="valid">Valid only</option><option value="errors">Input errors</option></select></label>
+    </div>
+    <div id="listCount" style="font-size:11px;color:var(--mute);margin:4px 2px"></div>
+    <div class="scroll"><table id="list"><thead></thead><tbody></tbody></table></div>
+    <div class="row"><button class="btn" id="listPrev">Previous</button><span id="listPage" style="align-self:center;text-align:center;color:var(--mute);min-width:60px"></span><button class="btn" id="listNext">Next</button></div>
+    <div class="row"><button class="btn" id="add">Add</button><button class="btn" id="dup">Duplicate</button><button class="btn" id="del">Delete</button></div>
+    <div class="row"><button class="btn" id="undo" title="Undo (Ctrl+Z)" disabled>Undo</button><button class="btn" id="redo" title="Redo (Ctrl+Y)" disabled>Redo</button></div>
+    <div class="row"><button class="btn" id="impProj" title="Import and replace from a project JSON file">Open JSON</button><button class="btn" id="expProj" title="Export all members and settings to project JSON">Save JSON</button><button class="btn" id="shareProj" title="Copy a link containing this project">Share link</button><input type="file" id="projectFile" accept=".json,application/json" hidden></div>
+    <div class="row"><button class="btn" id="imp">Import CSV</button><button class="btn" id="exp">Copy CSV</button><button class="btn" id="reset">Reset all</button><input type="file" id="file" accept=".csv,.txt,.tsv" hidden></div>
+    <h2>Member details</h2>
+    <div class="grid" id="form"></div>
+  </aside>
+  <main id="view">
+    <div id="vp"></div>
+    <div id="bar">
+      <div style="display:flex;gap:6px"><button class="btn on" data-v="iso">Isometric</button><button class="btn" data-v="sec">Section</button><button class="btn" data-v="side">Side</button><button class="btn" data-v="top">Top</button></div>
+      <button class="btn" data-camera="reset">Reset view</button><button class="btn" data-camera="fit">Fit model</button>
+      <button class="btn" id="assembly">Assembly view</button><div class="xl" id="assemblyGrid"><label>Grid X<select id="assemblyBaysX"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><label>Grid Z<select id="assemblyBaysZ"><option>1</option><option>2</option><option>3</option><option>4</option></select></label></div><button class="btn" id="meas">Measure</button><button class="btn" id="dxf" title="Export the selected member as an AutoCAD DXF model in millimetres">Export DXF</button><button class="btn" id="saveImage">Save PNG</button><button class="btn on" id="ann">Annotations</button><label class="xl">Explode <input type="range" id="ex" min="0" max="100" value="0"></label><span style="flex:1"></span>
+      <div style="display:flex;gap:6px"><button class="btn on" data-l="conc">Concrete</button><button class="btn on" data-l="main">Main bars</button><button class="btn on" data-l="sec">Secondary</button><button class="btn" data-isolate="reinforcement">Rebar only</button><button class="btn" data-isolate="concrete">Concrete only</button><button class="btn" data-isolate="all">Show all</button></div>
+    </div>
+    <div id="info"></div>
+    <div id="alabels"></div><div id="legend"></div><div id="mlabel"></div>
+  </main>
+  <aside id="right">
+    <h1 id="qtitle">Quantities</h1>
+    <div id="qsel"></div>
+    <h2>Project summary</h2>
+    <div id="qall"></div>
+    <section id="report" aria-hidden="true"></section>
+    <h2>Stock-bar cutting plan</h2>
+    <p style="color:var(--mute);font-size:12px">First-fit decreasing estimate using 12,000 mm stock bars. Saw kerf and splice design are not included.</p>
+    <button class="btn" id="cutPlan">Optimize 12 m cuts</button><div id="cutResults"></div>
+    <div class="row"><button class="btn" id="copy">Copy summary for Excel</button><button class="btn" id="print">Print / PDF</button><span id="copied" style="color:var(--mute);align-self:center"></span></div>
+    <p style="color:var(--mute);font-size:12px">Steel mass = 0.00617d² kg/m (IS 1786). Stirrup/tie cutting length = 2[(b−2c)+(D−2c)] + 2×10d (135° hooks, min 75 mm) − 4×2d (90° bends) − 2×3d (135° bends), per IS 2502 / SP 34. Beam bars = L − 2c + 2 × extra anchorage; layer 2 bars sit at a clear gap of max(25 mm, bar dia); 4-leg stirrups use an inner stirrup of half the outer width; column bars = H + lap; no deduction for bars from concrete (IS 1200 Part 2). Shuttering = contact area (IS 1200 Part 5); a monolithic slab depth reduces beam depth for both. Wastage: concrete 2.5%, steel 5%, shown separately. Checks are detailing checks assuming Fe500, not structural design. Confirm clause numbers against your copy of IS 456:2000.</p>
+  </aside>
+</div>
+<section id="assignmentSheet"></section>
+<script>
+const FIELDS={
+beam:[['#','Geometry'],['id','Mark','t'],['b','Width b (mm)'],['D','Depth D (mm), left end'],['D2','Depth at right end (mm, 0 = same)'],['L','Length L (mm)'],['c','Clear cover (mm)'],['nos','Nos of members'],['wu','Factored full-span UDL wᵤ (kN/m; 0 = off)'],['ds','Monolithic slab depth (mm)'],['#','Reinforcement'],['auto','Auto bar nos: 1 = from dimensions, 0 = manual'],['astB','Bottom steel required (mm², 0 = use nos)'],['astT','Top steel required (mm², 0 = use nos)'],['topN','Top bars (nos)'],['topD','Top dia (mm)'],['top2N','Top layer 2 (nos)'],['top2D','Top layer 2 dia (mm)'],['top2Cut','Top layer 2 stops from support (mm, 0 = full)'],['exN','Support top steel per end (nos)'],['exD','Support top steel dia (mm)'],['exLen','Support top steel length (mm)'],['anc','Extra anchorage each end (mm)'],['bentN','Bottom bars bent up (nos)'],['bentX','Bend start from support (mm)'],['botN','Bottom bars (nos)'],['botD','Bottom dia (mm)'],['bot2N','Bottom layer 2 (nos)'],['bot2D','Bottom layer 2 dia (mm)'],['bot2Cut','Bottom layer 2 stops from support (mm, 0 = full)'],['sideN','Side bars per face (nos)'],['sideD','Side dia (mm)'],['stD','Stirrup dia (mm)'],['legs','Stirrup legs (2 or 4)'],['s1','Spacing, support zones (mm)'],['s2','Spacing, mid zone (mm)']],
+col:[['#','Geometry'],['id','Mark','t'],['b','Width b (mm)'],['D','Depth D (mm)'],['H','Height H (mm)'],['shape','Section: 0 rect, 1 circular (D = dia)'],['c','Clear cover (mm)'],['nos','Nos of members'],['#','Reinforcement'],['auto','Auto bar nos: 1 = from dimensions, 0 = manual'],['pc','Steel % of gross area (auto, min 0.8)'],['vN','Vertical bars (nos)'],['vD','Vertical dia (mm)'],['lap','Lap length (× dia)'],['stD','Tie dia (mm)'],['s','Tie spacing (mm)']],
+wall:[['#','Geometry'],['id','Mark','t'],['L','Length L (mm)'],['H','Stem height H (mm)'],['t','Stem thickness (mm)'],['B','Base width B (mm)'],['T','Base thickness (mm)'],['Lt','Toe length (mm)'],['c','Clear cover (mm)'],['nos','Nos of members'],['#','Stem reinforcement'],['v1D','Earth face vertical dia'],['v1S','Earth face vertical spacing'],['v2D','Front face vertical dia'],['v2S','Front face vertical spacing'],['hD','Horizontal dia (each face)'],['hS','Horizontal spacing'],['#','Base reinforcement'],['btD','Transverse dia (top and bottom)'],['btS','Transverse spacing'],['blD','Longitudinal dia (top and bottom)'],['blS','Longitudinal spacing']]};
+const DEF={
+beam:{id:'B1',b:300,D:600,L:5000,c:25,nos:1,wu:0,ds:0,topN:3,topD:16,top2N:0,top2D:16,top2Cut:0,botN:3,botD:20,bot2N:0,bot2D:20,bot2Cut:0,exN:0,exD:16,exLen:1500,anc:0,bentN:0,bentX:600,D2:0,auto:1,astB:0,astT:0,sideN:0,sideD:12,stD:8,legs:2,s1:150,s2:200},
+col:{id:'C1',b:300,D:450,H:3000,shape:0,auto:1,pc:0.8,c:40,nos:1,vN:8,vD:16,lap:50,stD:8,s:150},
+wall:{id:'RW1',L:6000,H:3000,t:300,B:2200,T:400,Lt:500,c:50,nos:1,v1D:16,v1S:150,v2D:10,v2S:200,hD:10,hS:200,btD:12,btS:150,blD:10,blS:200}};
+const NAMES={beam:'Beam',col:'Column',wall:'Retaining wall',foot:'Footing',slab:'Slab'};
+const PL={beam:'Beams',col:'Columns',wall:'Walls',foot:'Footings',slab:'Slabs'};
+const SCHEDULE_FIELDS={beam:['b','D','D2','L'],col:['b','D','H'],wall:['L','H','t','B','T','Lt'],foot:['L','B','T'],slab:['L','B','T']};
+FIELDS.foot=FIELDS.slab=[['#','Geometry'],['id','Mark','t'],['L','Length L (mm)'],['B','Width B (mm)'],['T','Thickness (mm)'],['c','Clear cover (mm)'],['nos','Nos of members'],['#','Bottom mesh'],['bxD','Bars parallel to L, dia (mm)'],['bxS','Spacing (mm)'],['byD','Bars parallel to B, dia (mm)'],['byS','Spacing (mm)'],['#','Top mesh (dia 0 = none)'],['txD','Bars parallel to L, dia (mm)'],['txS','Spacing (mm)'],['tyD','Bars parallel to B, dia (mm)'],['tyS','Spacing (mm)']];
+DEF.foot={id:'F1',L:1800,B:1800,T:450,c:50,nos:1,bxD:12,bxS:150,byD:12,byS:150,txD:0,txS:150,tyD:0,tyS:150};
+DEF.slab={id:'S1',L:4000,B:3000,T:150,c:20,nos:1,bxD:10,bxS:150,byD:8,byS:200,txD:8,txS:200,tyD:8,tyS:200};
+const PRESETS={
+ 'ss-beam':{title:'Simply supported beam',type:'beam',member:{...DEF.beam,id:'B-SS',b:250,D:450,L:5000,c:25,auto:0,topN:2,topD:12,botN:3,botD:16,top2N:0,bot2N:0,stD:8,s1:100,s2:150,wu:0},fields:['botN','botD','topN','topD','stD','s1','s2'],prompt:'Enter the bottom and top longitudinal bars and the two stirrup-zone spacings for this example.'},
+ cantilever:{title:'Cantilever beam',type:'beam',member:{...DEF.beam,id:'B-CAN',b:250,D:450,L:2500,c:25,auto:0,topN:3,topD:16,botN:2,botD:12,exN:2,exD:16,exLen:1500,stD:8,s1:100,s2:150,wu:0},fields:['topN','topD','exN','exD','botN','botD','stD','s1','s2'],prompt:'Enter the top tension bars, support bars, bottom bars, and stirrup spacing for the cantilever example.'},
+ 'column-ties':{title:'Column with ties',type:'col',member:{...DEF.col,id:'C-TIE',b:300,D:300,H:3000,c:40,auto:0,vN:8,vD:16,stD:8,s:150},fields:['vN','vD','stD','s'],prompt:'Enter the longitudinal bar count and diameter, plus tie diameter and spacing.'},
+ 'one-way-slab':{title:'One-way slab',type:'slab',member:{...DEF.slab,id:'S-1W',L:5000,B:3000,T:150,c:20,bxD:10,bxS:150,byD:8,byS:200,txD:0,txS:200,tyD:0,tyS:200},fields:['bxD','bxS','byD','byS'],prompt:'Enter the bottom mesh diameters and spacing in each direction. The shorter span direction is the primary direction in this teaching example.'}
+};
+const COL={'Top bars':'#d62828','Bottom bars':'#1d4ed8','Side bars':'#0d9488','Stirrups':'#d97706','Vertical bars':'#d62828','Ties':'#d97706','Stem vertical, earth face':'#d62828','Stem vertical, front face':'#7c3aed','Horizontal, both faces':'#0d9488','Base transverse, top+bottom':'#1d4ed8','Base longitudinal, top+bottom':'#d97706','Top bars L2':'#be185d','Bottom bars L2':'#0891b2','Support top steel':'#65a30d','Inner stirrups':'#a16207','Bent-up bars':'#9333ea','Mesh bottom X':'#1d4ed8','Mesh bottom Y':'#0891b2','Mesh top X':'#d62828','Mesh top Y':'#be185d'};
+const LAY={'Bent-up bars':'main','Mesh bottom X':'main','Mesh bottom Y':'main','Top bars L2':'main','Bottom bars L2':'main','Support top steel':'main','Top bars':'main','Bottom bars':'main','Vertical bars':'main','Stem vertical, earth face':'main','Base transverse, top+bottom':'main'};
+const CM={},snaps=[];
+const cm=h=>CM[h]||(CM[h]=new THREE.MeshLambertMaterial({color:h}));
+let S;
+try{S=JSON.parse(localStorage.getItem('rcc3d_v1'))}catch(e){}
+if(!S||!S.data)S={type:'beam',sel:{beam:0,col:0,wall:0},data:{beam:[{...DEF.beam}],col:[{...DEF.col}],wall:[{...DEF.wall}]}};
+S.cfg={fck:25,fy:500,seismicZone:'Unspecified',rc:0,rs:0,rk:0,...S.cfg};S.sel=S.sel||{};for(const k in DEF){S.data[k]=(S.data[k]||[{...DEF[k]}]).map(m=>({...DEF[k],auto:0,...m}));if(S.sel[k]==null)S.sel[k]=0}
+const APP_PARAMS=new URLSearchParams(location.search),EMBED_DEMO=APP_PARAMS.get('embed')==='1';
+if(EMBED_DEMO){document.body.classList.add('embed-mode');S.type='beam';S.sel.beam=0;S.data.beam=[{...PRESETS['ss-beam'].member,id:'DEMO'}]}
+const inr=v=>'₹'+(+v||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const LENGTH_FIELDS=new Set('b D D2 L c ds topD top2D top2Cut exD exLen anc bentX botD bot2D sideD stD s1 s2 H vD s t B T Lt v1D v1S v2D v2S hD hS btD btS blD blS bxD bxS byD byS txD txS tyD tyS'.split(' '));
+let displayUnits='mm';
+try{displayUnits=localStorage.getItem('rcc3d_units_v1')==='in'?'in':'mm'}catch(error){console.warn('Could not read the display-unit preference:',error)}
+const unitFactor=()=>displayUnits==='in'?1/25.4:1;
+const toDisplay=(value,key)=>LENGTH_FIELDS.has(key)?Number(value)*unitFactor():Number(value);
+const fromDisplay=(value,key)=>LENGTH_FIELDS.has(key)?Number(value)/unitFactor():Number(value);
+const lengthText=(value,digits=displayUnits==='in'?3:0)=>`${fmt(displayUnits==='in'?value/25.4:value,digits)} ${displayUnits}`;
+const fieldLabel=f=>{
+  if(f[0]==='#')return f[1];
+  if(!LENGTH_FIELDS.has(f[0]))return f[1];
+  return /\bmm\b/i.test(f[1])?f[1].replace(/\bmm\b/gi,displayUnits):`${f[1]} (${displayUnits})`;
+};
+const TB={20:1.2,25:1.4,30:1.5,35:1.7,40:1.9},Ld=(d,comp)=>.87*S.cfg.fy*d/(4*(TB[S.cfg.fck]||1.9)*1.6*(comp?1.25:1));
+let exList=[],exS=1,exT=0,exF=0;
+const EX=(nm,p)=>({'Top bars':V3(0,1,0),'Top bars L2':V3(0,1.6,0),'Support top steel':V3(0,.8,0),'Bent-up bars':V3(0,.5,0),'Mesh bottom X':V3(0,-1,0),'Mesh bottom Y':V3(0,-1.6,0),'Mesh top X':V3(0,1,0),'Mesh top Y':V3(0,1.6,0),'Bottom bars':V3(0,-1,0),'Bottom bars L2':V3(0,-1.6,0),'Side bars':V3((Math.sign(p.x)||1)*1.2,0,0),'Vertical bars':V3(Math.sign(p.x),Math.sign(p.y),0),'Stem vertical, earth face':V3(1,0,0),'Stem vertical, front face':V3(-1,0,0),'Horizontal, both faces':V3(0,.8,0),'Base transverse, top+bottom':V3(0,-1,0),'Base longitudinal, top+bottom':V3(0,-1.8,0)})[nm]||V3(0,0,0);
+const save=()=>{invalidateDuplicateIndex();try{localStorage.setItem('rcc3d_v1',JSON.stringify(S))}catch(e){}};
+const $=s=>document.querySelector(s);
+const fmt=(v,d)=>(+v).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const mem=()=>S.data[S.type][S.sel[S.type]];
+const HISTORY_LIMIT=50,HISTORY_BYTES_LIMIT=24*1024*1024,undoStack=[],redoStack=[];
+let duplicateIndex=null;
+function invalidateDuplicateIndex(){duplicateIndex=null}
+function duplicateCount(type,id){
+  if(!duplicateIndex){duplicateIndex=Object.fromEntries(Object.keys(NAMES).map(t=>{
+    const counts=new Map();S.data[t].forEach(m=>counts.set(String(m.id),1+(counts.get(String(m.id))||0)));return[t,counts];
+  }))}
+  return duplicateIndex[type].get(String(id))||0;
+}
+const stateSnapshot=()=>JSON.stringify(S);
+const setHistoryButtons=()=>{$('#undo').disabled=!undoStack.length;$('#redo').disabled=!redoStack.length};
+function trimHistory(){
+  const total=()=>[...undoStack,...redoStack].reduce((n,s)=>n+s.length*2,0);
+  while(undoStack.length>HISTORY_LIMIT)undoStack.shift();
+  while(redoStack.length>HISTORY_LIMIT)redoStack.shift();
+  while(total()>HISTORY_BYTES_LIMIT&&(undoStack.length||redoStack.length)){
+    if(undoStack.length)undoStack.shift();else redoStack.shift();
+  }
+}
+function commitHistory(snapshot){
+  if(typeof snapshot!=='string'||snapshot===stateSnapshot())return;
+  undoStack.push(snapshot);redoStack.length=0;trimHistory();setHistoryButtons();
+}
+function pushUndo(){
+  undoStack.push(stateSnapshot());redoStack.length=0;trimHistory();setHistoryButtons();
+}
+function restoreSnapshot(snapshot){
+  S=JSON.parse(snapshot);invalidateDuplicateIndex();save();refresh(true);setHistoryButtons();
+}
+function undo(){
+  if(!undoStack.length)return;
+  redoStack.push(stateSnapshot());restoreSnapshot(undoStack.pop());trimHistory();setHistoryButtons();
+}
+function redo(){
+  if(!redoStack.length)return;
+  undoStack.push(stateSnapshot());restoreSnapshot(redoStack.pop());trimHistory();setHistoryButtons();
+}
+function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function spreadsheetCell(value,delimiter){
+  let text=String(value??'');
+  const formula=/^[\s\u0000-\u001F\uFEFF]*[=+\-@]/.test(text);
+  if(formula)text="'"+text;
+  if(delimiter==='\t')text=text.replace(/[\t\r\n]+/g,' ');
+  else if(text.includes(delimiter)||/["\r\n\t]/.test(text)||formula)text='"'+text.replace(/"/g,'""')+'"';
+  return text;
+}
+
+/* ---------- quantities ---------- */
+const sp=v=>Math.max(+v||0,1);
+const cnt=(len,s)=>Math.floor(Math.max(len,0)/sp(s))+1;
+function stirZ(L,c,s1,s2){const h=[];let p=c;while(p<L/2&&h.length<1000){h.push(p);p+=p<L/4?sp(s1):sp(s2)}return h.concat(h.slice().reverse().map(x=>L-x)).map(x=>x-L/2)}
+function perim(b,D,c,st,d,n){
+  const cx=b/2-c-st-d/2,cy=D/2-c-st-d/2,P=[[-cx,-cy],[cx,-cy],[cx,cy],[-cx,cy]].slice(0,Math.min(n,4));
+  const ex=Math.max(n-4,0),k=[0,0,0,0];
+  const order=b>=D?[0,1,2,3]:[2,3,0,1]; // top,bottom,left,right
+  for(let i=0;i<ex;i++)k[order[i%4]]++;
+  const side=(cnt,f)=>{for(let j=1;j<=cnt;j++)P.push(f(j/(cnt+1)))};
+  side(k[0],t=>[-cx+2*cx*t,cy]);side(k[1],t=>[-cx+2*cx*t,-cy]);side(k[2],t=>[-cx,-cy+2*cy*t]);side(k[3],t=>[cx,-cy+2*cy*t]);
+  return P}
+function pathProfile(points){
+  if(points.length<=2)return {profile:'Straight (ST)',dims:`Cut length ${fmt(plen(points),0)} mm`};
+  const segments=points.slice(1).map((p,i)=>fmt(Math.hypot(p[0]-points[i][0],p[1]-points[i][1]),0));
+  return {profile:'Bent-up (BU)',dims:`Centerline segments ${segments.join(' + ')} mm`};
+}
+function calc(type,m){if(validate(type,m).e.length)return {conc:0,shut:0,bars:[],kg:0,bad:true};m=eff(type,m);
+  const bars=[],add=(name,d,n,len,layer,profile='Straight (ST)',dims=`Cut length ${fmt(len,0)} mm`)=>{if(+d>0&&n>0)bars.push({name,d:+d,n,len,layer,profile,dims})};
+  let conc,shut;if(type==='foot'||type==='slab'){const q=plate(m,type,add);conc=q.conc;shut=q.shut}else 
+  if(type==='beam'){
+    const {b,D,L,c,topN,topD,botN,botD,sideN,sideD,stD,s1,s2}=m;
+    const D2=+m.D2||D,Dd=(D+D2)/2,Da=Dd-(m.ds||0);conc=b*Da*L/1e9;shut=(b*Math.hypot(L,D2-D)+2*Da*L)/1e6;
+    const Z=stirZ(L,c,s1,s2);
+    const G={};beamGroups(m).forEach(g=>{const e=G[g.nm]=G[g.nm]||{d:g.d,n:0,tot:0,pts:g.pts};e.n+=g.n;e.tot+=g.n*plen(g.pts)});for(const k in G){const g=G[k],profile=pathProfile(g.pts);add(k,g.d,g.n,g.tot/g.n,k==='Side bars'?'sec':'main',profile.profile,profile.dims)}
+    add('Stirrups',stD,Z.length,stirLen(b,Dd,c,stD),'sec','Closed link (LK)',`Approx. outer ${fmt(b,0)} × ${fmt(Dd,0)} mm; 135° hooks and bend deductions included`);if(m.legs>=4){const iw=(b-2*c)/2+2*c;add('Inner stirrups',stD,Z.length,stirLen(iw,Dd,c,stD),'sec','Closed link (LK)',`Approx. outer ${fmt(iw,0)} × ${fmt(Dd,0)} mm; 135° hooks and bend deductions included`)}
+  }else if(type==='col'){
+    const {b,D,H,c,vN,vD,lap,stD,s}=m;
+    const circ=+m.shape===1;conc=(circ?Math.PI/4*D*D:b*D)*H/1e9;shut=(circ?Math.PI*D:2*(b+D))*H/1e6;
+    add('Vertical bars',vD,vN,H+lap*vD,'main','Straight + lap allowance (SL)',`Column height ${fmt(H,0)} mm + lap ${fmt(lap*vD,0)} mm`);
+    add('Ties',stD,stirZ(H,c,s,s).length,circ?Math.PI*(D-2*c-stD)+2*Math.max(10*stD,75)-2*3*stD:stirLen(b,D,c,stD),'sec',circ?'Circular tie (CT)':'Closed link (LK)',circ?`Tie centreline diameter approx. ${fmt(D-2*c-stD,0)} mm; hook allowance included`:`Approx. outer ${fmt(b,0)} × ${fmt(D,0)} mm; 135° hooks and bend deductions included`);
+  }else{
+    const {L,H,t,B,T,c,v1D,v1S,v2D,v2S,hD,hS,btD,btS,blD,blS}=m;
+    conc=L*(B*T+t*H)/1e9;shut=(2*H*L+T*(2*L+2*B)+2*H*t)/1e6;
+    add('Stem vertical, earth face',v1D,cnt(L-2*c,v1S),H+T-2*c+300,'main','L-bar (LB)',`Vertical ${fmt(H+T-2*c,0)} mm + assumed 300 mm tail`);
+    add('Stem vertical, front face',v2D,cnt(L-2*c,v2S),H+T-2*c+300,'sec','L-bar (LB)',`Vertical ${fmt(H+T-2*c,0)} mm + assumed 300 mm tail`);
+    add('Horizontal, both faces',hD,2*cnt(H-c,hS),L-2*c,'sec');
+    add('Base transverse, top+bottom',btD,2*cnt(L-2*c,btS),B-2*c,'main');
+    add('Base longitudinal, top+bottom',blD,2*cnt(B-2*c,blS),L-2*c,'sec');
+  }
+  bars.forEach(r=>{r.col=COL[r.name];r.tot=r.n*r.len/1000;r.kg=r.d*r.d*0.00617*r.tot});
+  const kg=bars.reduce((a,r)=>a+r.kg,0);
+  return {conc,shut,bars,kg}}
+// IS 2502 / SP 34: outer dims, 135° hooks 10d (min 75 mm), bend deductions 90°=2d, 135°=3d
+const stirLen=(b,D,c,d)=>2*((b-2*c)+(D-2*c))+2*Math.max(10*d,75)-4*2*d-2*3*d;
+function workedCalculation(type,m,bar){
+  const d=bar.d,n=bar.n,len=bar.len;
+  let cut='';
+  if(bar.name==='Stirrups'||bar.name==='Inner stirrups'||bar.name==='Ties'){
+    const width=bar.name==='Inner stirrups'?(m.b-2*m.c)/2+2*m.c:m.b;
+    if(type==='col'&&+m.shape===1){
+      const centreline=Math.PI*(m.D-2*m.c-m.stD);
+      cut=`Tie length ≈ π(D − 2c − dₛ) + 2 max(10dₛ, 75) − 2(3dₛ) = ${fmt(centreline,0)} + ${fmt(2*Math.max(10*m.stD,75),0)} − ${fmt(6*m.stD,0)} = ${fmt(len,0)} mm. App approximation; verify detailing.`;
+    }else{
+      const depth=type==='beam'?(m.D+(+m.D2||m.D))/2:m.D;
+      const hooks=2*Math.max(10*m.stD,75),deductions=4*2*m.stD+2*3*m.stD;
+      cut=`Lcut = 2[(b − 2c) + (D − 2c)] + 2 max(10dₛ, 75) − 4(2dₛ) − 2(3dₛ) = 2[(${fmt(width,0)} − 2×${fmt(m.c,0)}) + (${fmt(depth,0)} − 2×${fmt(m.c,0)})] + ${fmt(hooks,0)} − ${fmt(deductions,0)} = ${fmt(len,0)} mm. Approximate link rule; IS 2502 / SP 34 assumptions.`;
+    }
+  }else if(type==='beam'){
+    const group=beamGroups(m).find(g=>g.nm===bar.name);
+    if(group){
+      const segments=group.pts.slice(1).map((p,i)=>Math.hypot(p[0]-group.pts[i][0],p[1]-group.pts[i][1]));
+      cut=`Centerline path length ≈ ${segments.map(x=>fmt(x,0)).join(' + ')} = ${fmt(segments.reduce((a,x)=>a+x,0),0)} mm. App-defined ${bar.profile} profile; confirm anchorage, bends, and cut length from approved drawings.`;
+    }else if(bar.name==='Support top steel')cut=`Lcut = entered support-bar length = ${fmt(m.exLen,0)} mm. App-defined profile; confirm anchorage from approved drawings.`;
+    else cut=`Cut length per bar = ${fmt(len,0)} mm using the app's displayed profile assumptions.`;
+  }else if(type==='col'&&bar.name==='Vertical bars'){
+    cut=`Lcut = H + lap ratio × bar diameter = ${fmt(m.H,0)} + ${fmt(m.lap,0)} × ${fmt(d,0)} = ${fmt(len,0)} mm. Simplified lap allowance; splice design is not checked.`;
+  }else if(type==='wall'&&(bar.name==='Stem vertical, earth face'||bar.name==='Stem vertical, front face')){
+    cut=`Lcut = H + T − 2c + assumed tail = ${fmt(m.H,0)} + ${fmt(m.T,0)} − 2×${fmt(m.c,0)} + 300 = ${fmt(len,0)} mm. Tail is an app assumption, not a detailing instruction.`;
+  }else if(type==='foot'||type==='slab'){
+    const clear=bar.name.endsWith('X')?m.L-2*m.c:m.B-2*m.c;
+    cut=`Straight mesh bar: Lcut = span − 2c = ${fmt(bar.name.endsWith('X')?m.L:m.B,0)} − 2×${fmt(m.c,0)} = ${fmt(clear,0)} mm.`;
+  }else cut=`App cut length = ${fmt(len,0)} mm per bar; inspect the profile and verify against drawings.`;
+  const totalM=bar.tot,approxWeight=d*d/162*totalM;
+  return `<details class="worked-row"><summary>${escapeHTML(bar.name)} — cut length and weight derivation</summary><p>${escapeHTML(cut)}</p><p>Total length = ${n} bars × ${fmt(len,0)} mm ÷ 1000 = ${fmt(totalM,3)} m.</p><p>Steel unit mass ≈ d²/162 = ${d}²/162 = ${fmt(d*d/162,3)} kg/m (IS 1786). Weight ≈ d²/162 × ${fmt(totalM,3)} = ${fmt(approxWeight,3)} kg. App quantity uses 0.00617d²; reported weight: ${fmt(bar.kg,3)} kg.</p></details>`;
+}
+function checks(t,m){m=eff(t,m);const o=[],ck=(ok,txt,screen=false)=>o.push({ok,txt,screen}),A=d=>Math.PI*d*d/4;
+ if(t==='beam'){
+  const d=Math.min(m.D,+m.D2||m.D)-m.c-m.stD-m.botD/2,At=m.botN*A(m.botD)+(m.bot2N||0)*A(m.bot2D||0),Asc=m.topN*A(m.topD)+(m.top2N||0)*A(m.top2D||0),mn=.85*m.b*d/S.cfg.fy,mx=Math.min(.75*d,300);
+  ck(At>=mn,`Tension steel ${fmt(At,0)} mm² vs min 0.85bd/fy = ${fmt(mn,0)} mm² (Fe${S.cfg.fy}). Cl 26.5.1.1(a)`);
+  ck(At+Asc<=.04*m.b*m.D,`Total steel ${fmt(At+Asc,0)} mm² vs max 4% bD = ${fmt(.04*m.b*m.D,0)} mm². Cl 26.5.1.1(b)`);
+  ck(m.s1<=mx&&m.s2<=mx,`Stirrup spacing ${m.s1}/${m.s2} mm vs max min(0.75d, 300) = ${fmt(mx,0)} mm. Cl 26.5.1.5`);
+  if(m.D>750){const rq=.0005*m.b*m.D,pv=m.sideN*A(m.sideD),gap=(m.D-2*m.c)/(m.sideN+1);ck(pv>=rq&&gap<=Math.min(300,m.b),`Side face steel ${fmt(pv,0)} mm² per face vs min 0.05% bD = ${fmt(rq,0)} mm²; spacing ${fmt(gap,0)} mm vs max min(300, b). Cl 26.5.1.3`)}
+  ck(m.c>=20,`Cover ${m.c} mm: ${m.c>=30?'meets moderate exposure':'mild exposure only (30 mm for moderate)'}. Table 16`);
+  ck(null,`Development length Ld (tension, deformed bars, M${S.cfg.fck}/Fe${S.cfg.fy}): ${fmt(Ld(m.botD),0)} mm for ${m.botD} mm bar, ${fmt(Ld(m.topD),0)} mm for ${m.topD} mm bar. Cl 26.2.1`);
+ }else if(t==='col'){
+  const circ=+m.shape===1,Ag=circ?Math.PI/4*m.D*m.D:m.b*m.D,As=m.vN*A(m.vD),sm=Math.min(circ?m.D:Math.min(m.b,m.D),16*m.vD,300),tm=Math.max(m.vD/4,6);
+  ck(As>=.008*Ag&&As<=.06*Ag,`Steel ${fmt(As,0)} mm² = ${fmt(As/Ag*100,2)}% of Ag (limits 0.8% to 6%). Cl 26.5.3.1(a)`);
+  ck(m.vN>=(circ?6:4)&&m.vD>=12,`Min ${circ?6:4} bars and 12 mm dia. Cl 26.5.3.1(b)`);
+  ck(m.stD>=tm,`Tie dia ${m.stD} mm vs min max(d/4, 6) = ${fmt(tm,2)} mm. Cl 26.5.3.2(c)`);
+  ck(m.s<=sm,`Tie spacing ${m.s} mm vs max ${fmt(sm,0)} mm (least of lateral dim, 16d, 300). Cl 26.5.3.2(c)`);
+  ck(m.c>=Math.max(40,m.vD),`Cover ${m.c} mm vs min 40 mm or bar dia. Cl 26.4.2.1`);
+  const lc=Math.max(Ld(m.vD,1),24*m.vD);ck(m.lap*m.vD>=lc,`Lap ${fmt(m.lap*m.vD,0)} mm vs min ${fmt(lc,0)} mm (Ld in compression, 24d). Cl 26.2.5.1`);
+  ck(null,`Ld in tension ${fmt(Ld(m.vD),0)} mm for ${m.vD} mm bar (M${S.cfg.fck}/Fe${S.cfg.fy}); use for tension laps. Cl 26.2.1`);
+ }else{
+  if(t==='foot'||t==='slab'){const d=m.T-m.c-(+m.bxD||0)/2,mx=Math.min(3*d,300),pm=(dd,s)=>Math.PI*dd*dd/4*1000/(+s||1);
+   ck(+m.bxS<=mx&&+m.byS<=mx,`Bar spacing ${m.bxS}/${m.byS} mm vs max min(3d, 300) = ${fmt(mx,0)} mm. Cl 26.3.3(b)`);
+   ck(m.c>=(t==='foot'?50:20),t==='foot'?`Cover ${m.c} mm vs 50 mm for footings. Cl 26.4.2.2`:`Cover ${m.c} mm vs 20 mm, mild exposure. Table 16`);
+   if(t==='slab'){const rq=.0012*1000*m.T;ck(pm(m.bxD,m.bxS)>=rq&&pm(m.byD,m.byS)>=rq,`Bottom steel ${fmt(pm(m.bxD,m.bxS),0)} / ${fmt(pm(m.byD,m.byS),0)} mm²/m vs min 0.12% = ${fmt(rq,0)} mm²/m (Fe415 and above). Cl 26.5.2.1`)}
+   return o}
+  const d=m.t-m.c-m.v1D/2,mx=Math.min(3*d,300),dx=Math.min(5*d,450);
+  ck(m.v1S<=mx,`Main bar spacing ${m.v1S} mm vs max min(3d, 300) = ${fmt(mx,0)} mm. Cl 26.3.3(b)`);
+  ck(m.hS<=dx&&m.blS<=450,`Distribution spacing ${m.hS}/${m.blS} mm vs max min(5d, 450). Cl 26.3.3(b)`);
+  ck(m.c>=50,`Cover ${m.c} mm vs 50 mm for faces against earth / footing. Cl 26.4.2.2`);
+ }
+ if(['III','IV','V'].includes(S.cfg.seismicZone)){
+  if(t==='beam'){
+   const d=Math.min(m.D,+m.D2||m.D)-m.c-m.stD-m.botD/2,barDias=[['topN','topD'],['top2N','top2D'],['botN','botD'],['bot2N','bot2D'],['exN','exD']].filter(([n])=>+m[n]>0).map(([,dia])=>+m[dia]).filter(x=>x>0),db=Math.min(...(barDias.length?barDias:[m.topD,m.botD])),spacing=Math.min(d/4,8*db,100),area=dd=>Math.PI*dd*dd/4;
+   const positive=m.botN*area(m.botD)+(m.bot2N||0)*area(m.bot2D||0),negative=m.topN*area(m.topD)+(m.top2N||0)*area(m.top2D||0)+m.exN*area(m.exD);
+   ck(m.s1<=spacing,`Zone ${S.cfg.seismicZone}: support-zone hoop spacing ${m.s1} mm vs screening limit min(d/4, 8db, 100) = ${fmt(spacing,0)} mm; d uses the smaller beam depth. IS 13920:2016 beam-end screen`,true);
+   ck(positive>=.5*negative,`Positive longitudinal steel area ${fmt(positive,0)} mm² vs half negative area ${fmt(.5*negative,0)} mm² at the joint. IS 13920:2016 beam-face screen`,true);
+   ck(null,'The first-hoop offset, joint shear, anchorage, confinement hooks, and full beam-column joint detailing are not modeled.',true);
+  }else if(t==='col'){
+   const least=+m.shape===1?m.D:Math.min(m.b,m.D),largest=+m.shape===1?m.D:Math.max(m.b,m.D),lo=Math.max(largest,m.H/6,450),spacing=Math.min(least/4,6*m.vD,100);
+   ck(m.s<=spacing,`Zone ${S.cfg.seismicZone}: uniform tie spacing ${m.s} mm vs screening limit min(lateral dimension/4, 6db, 100) = ${fmt(spacing,0)} mm in an assumed end confinement length lo = ${fmt(lo,0)} mm. IS 13920:2016 column-end screen`,true);
+   ck(null,'This model has uniform tie spacing and cannot verify confinement length by storey, 135° hook details, cross-ties, lap zones, or strong-column/weak-beam capacity.',true);
+  }
+ }
+ return o}
+function beamLoadCheck(t,m){
+ if(t!=='beam'||!(+m.wu>0))return null;
+ const errors=validate(t,m).e;if(errors.length)return {error:`Resolve input errors before evaluating actions: ${errors.join('; ')}`};
+ m=eff(t,m);
+ const b=+m.b,d=Math.min(+m.D,+m.D2||+m.D)-m.c-m.stD-m.botD/2,L=+m.L,As=(m.botN*Math.PI*m.botD**2/4)+(m.bot2N||0)*Math.PI*(m.bot2D||0)**2/4;
+ if(!(b>0&&d>0&&L>0&&As>0))return {error:'A positive section, effective depth, span, and bottom tension-steel area are required.'};
+ const xu=.87*S.cfg.fy*As/(.36*S.cfg.fck*b),xuLim=({415:.48,500:.46,550:.44}[S.cfg.fy]||.46)*d;
+ const xuUsed=Math.min(xu,xuLim),mr=.36*S.cfg.fck*b*xuUsed*(d-.42*xuUsed)/1e6;
+ const mu=+m.wu*(L/1000)**2/8,vu=+m.wu*(L/1000)/2,tau=vu*1000/(b*d);
+ const tauMax=({20:2.8,25:3.1,30:3.5,35:3.7,40:4}[S.cfg.fck]||4);
+ return {wu:+m.wu,mu,vu,As,d,xu,xuLim,mr,tau,tauMax,checks:[
+   {ok:xu<=xuLim,screen:true,message:`Neutral-axis ratio xu/d = ${fmt(xu/d,3)} vs singly reinforced limit ${fmt(xuLim/d,2)}.`},
+   {ok:mu<=mr,screen:true,message:`Factored UDL moment Mu = ${fmt(mu,2)} kN·m vs rectangular singly reinforced moment limit ${fmt(mr,2)} kN·m.`},
+   {ok:tau<=tauMax,screen:true,message:`Average shear stress τv = ${fmt(tau,2)} N/mm² vs maximum shear-stress screen ${fmt(tauMax,1)} N/mm²; stirrup shear capacity is not checked.`}
+ ]};
+}
+function beamLoadHTML(t,m){
+ if(t!=='beam')return '';
+ if(!(+m.wu>0))return '<section class="validation-summary"><h2>Preliminary structural screen</h2><p>No factored UDL entered; load checks are off.</p></section>';
+ const a=beamLoadCheck(t,m);
+ if(a.error)return `<section class="validation-summary"><h2>Preliminary structural screen</h2><div class="ck bad">${escapeHTML(a.error)}</div></section>`;
+ return `<section class="validation-summary"><h2>Preliminary structural screen — simply supported UDL</h2><div class="kv"><span>Entered factored UDL (kN/m)</span><span>${fmt(a.wu,2)}</span><span>Mu demand (kN·m)</span><span>${fmt(a.mu,2)}</span><span>Vu demand (kN)</span><span>${fmt(a.vu,2)}</span><span>Effective depth used (mm)</span><span>${fmt(a.d,0)}</span><span>Bottom tension steel used (mm²)</span><span>${fmt(a.As,0)}</span></div>${a.checks.map(c=>`<div class="ck ${c.ok?'':'bad'}"><b>${c.ok?'Screen met':'Screen not met'}</b> ${escapeHTML(c.message)}</div>`).join('')}<p>Preliminary screen only: UDL is assumed factored and already includes all loads; full span is simply supported. Uses a rectangular section and smaller end depth; compression steel, flange action, deflection, development, redistribution, and full shear reinforcement capacity are not evaluated. Verify design independently.</p></section>`;
+}
+function beamGroups(m){
+  const {b,L,c,stD}=m,v=k=>+m[k]||0,anc=v('anc'),gp=(...a)=>Math.max(25,...a),Gm=bgeo(m),out=[],za=-L/2+c-anc,zb=L/2-c+anc;
+  const cz=k=>v(k)>0?[-L/2+c+v(k),L/2-c-v(k)]:[za,zb];
+  const Tf=o=>()=>Gm.Yt-o,Bf=o=>z=>Gm.Ys(z)+o;
+  const row=(n,d)=>{const x=b/2-c-stD-d/2;return Array.from({length:n},(_,i)=>n>1?-x+2*x*i/(n-1):0)};
+  const add=(nm,xs,d,pts)=>{if(xs.length&&d>0)out.push({nm,n:xs.length,d,xs,pts})};
+  const str=(f,z0,z1)=>[[z0,f(z0)],[z1,f(z1)]];
+  const t1=c+stD+v('topD')/2,t2=t1+v('topD')/2+gp(v('topD'),v('top2D'))+v('top2D')/2;
+  let lo=t1,ld=v('topD');if(v('top2N')>0){lo=t2;ld=v('top2D')}
+  const te=lo+ld/2+gp(ld,v('exD'))+v('exD')/2;if(v('exN')>0){lo=te;ld=v('exD')}
+  const bu=lo+ld/2+gp(ld,v('botD'))+v('botD')/2,b1=c+stD+v('botD')/2,b2=b1+v('botD')/2+gp(v('botD'),v('bot2D'))+v('bot2D')/2;
+  add('Top bars',row(v('topN'),v('topD')),v('topD'),str(Tf(t1),za,zb));
+  add('Top bars L2',row(v('top2N'),v('top2D')),v('top2D'),str(Tf(t2),...cz('top2Cut')));
+  const bn=v('botN'),bt=Math.min(v('bentN'),bn),all=row(bn,v('botD')),
+    ord=all.map((x,i)=>i).sort((a,c2)=>Math.abs(a-(bn-1)/2)-Math.abs(c2-(bn-1)/2)),bs=new Set(ord.slice(0,bt));
+  add('Bottom bars',all.filter((x,i)=>!bs.has(i)),v('botD'),str(Bf(b1),za,zb));
+  if(bt>0){const X=v('bentX'),yu=Gm.Yt-bu,z1=-L/2+c+X,z1r=L/2-c-X,s=Gm.s,q=yu-Gm.Yt+Gm.D1+s*L/2-b1,z2=(q+z1)/(1-s),z2r=(z1r-q)/(1+s),yb=Bf(b1);
+    add('Bent-up bars',all.filter((x,i)=>bs.has(i)),v('botD'),[[za,yu],[z1,yu],[z2,yb(z2)],[z2r,yb(z2r)],[z1r,yu],[zb,yu]])}
+  add('Bottom bars L2',row(v('bot2N'),v('bot2D')),v('bot2D'),str(Bf(b2),...cz('bot2Cut')));
+  add('Support top steel',row(v('exN'),v('exD')),v('exD'),str(Tf(te),-L/2+c,-L/2+c+v('exLen')));
+  add('Support top steel',row(v('exN'),v('exD')),v('exD'),str(Tf(te),L/2-c-v('exLen'),L/2-c));
+  const sx=b/2-c-stD-v('sideD')/2,yT=Gm.Yt-t1;
+  for(let i=0;i<v('sideN');i++){const f=(i+1)/(v('sideN')+1),yf=z=>yT+(Gm.Ys(z)+b1-yT)*f;add('Side bars',[-sx,sx],v('sideD'),str(yf,-L/2+c,L/2-c))}
+  return out}
+function plate(m,t,add){const {L,B,T,c}=m,v=k=>+m[k]||0;
+  [['Mesh bottom X','bx',B,L],['Mesh bottom Y','by',L,B],['Mesh top X','tx',B,L],['Mesh top Y','ty',L,B]].forEach(([nm,k,ac,len])=>{const d=v(k+'D'),s=v(k+'S');if(d>0&&s>0)add(nm,d,cnt(ac-2*c,s),len-2*c,'main')});
+  return {conc:L*B*T/1e9,shut:t==='foot'?2*(L+B)*T/1e6:L*B/1e6}}
+function eff(t,m){
+ if(!+(m.auto??0))return m;
+ const r={...m},v=k=>+m[k]||0,A=d=>Math.PI*d*d/4,c=v('c'),st=v('stD');
+ if(t==='beam'){
+  const D1=v('D'),D2=v('D2')||D1,Dx=Math.max(D1,D2),Dn=Math.min(D1,D2),W=v('b')-2*(c+st),
+   fit=d=>Math.max(1,Math.floor((W+Math.max(d,25))/(d+Math.max(d,25))));
+  const fill=(ast,d,a,b2,d2)=>{if(v(ast)>0&&v(d)>0){const tot=Math.ceil(v(ast)/A(v(d))),f=fit(v(d));r[a]=Math.min(tot,f);r[b2]=Math.max(tot-f,0);r[d2]=v(d)}};
+  fill('astB','botD','botN','bot2N','bot2D');fill('astT','topD','topN','top2N','top2D');
+  r.sideN=Dx>750&&v('sideD')>0?Math.max(Math.ceil(.0005*v('b')*Dx/A(v('sideD'))),Math.ceil((Dn-2*c)/300)-1):0;
+ }else if(t==='col'){
+  const d=v('vD'),circ=v('shape')===1,Ag=circ?Math.PI/4*v('D')**2:v('b')*v('D'),
+   per=circ?Math.PI*(v('D')-2*(c+st)-d):2*((v('b')-2*(c+st)-d)+(v('D')-2*(c+st)-d));
+  const N=Math.max(circ?6:4,Math.ceil(per/300),d>0?Math.ceil((v('pc')||.8)/100*Ag/A(d)):0);
+  r.vN=N+N%2}
+ return r}
+const plen=p=>p.slice(1).reduce((s,q,i)=>s+Math.hypot(q[0]-p[i][0],q[1]-p[i][1]),0);
+function bgeo(m){const L=+m.L,D1=+m.D,D2=+m.D2||D1,Dx=Math.max(D1,D2),Yt=Dx/2;return {L,D1,D2,Dx,Yt,s:(D2-D1)/L,Ys:z=>Yt-(D1+(D2-D1)*(z+L/2)/L)}}
+const BD=[6,8,10,12,16,20,25,28,32,36,40],DK=/^(?!D$).*D$/;
+const RG={D2:[0,4000],astB:[0,200000],astT:[0,200000],pc:[0.8,4],b:[100,2000],D:[100,4000],L:[300,30000],H:[300,15000],c:[10,100],nos:[1,500],wu:[0,1000],ds:[0,500],topN:[0,30],top2N:[0,30],botN:[0,30],bot2N:[0,30],exN:[0,30],sideN:[0,20],bentN:[0,30],vN:[0,60],exLen:[0,15000],anc:[0,3000],bentX:[0,15000],top2Cut:[0,15000],bot2Cut:[0,15000],s1:[50,300],s2:[50,450],s:[50,300],lap:[24,80],t:[100,1000],B:[300,12000],T:[100,3000],Lt:[0,5000],v1S:[50,450],v2S:[50,450],hS:[50,450],btS:[50,450],blS:[50,450],bxS:[50,450],byS:[50,450],txS:[50,450],tyS:[50,450]};
+function validate(t,m){
+ const e=[],w=[],K={},lab={};FIELDS[t].forEach(f=>{if(f[0]!=='#')lab[f[0]]=f[1]});
+ const val=k=>m[k]??DEF[t][k],n=k=>+val(k)||0,
+  E=(k,s)=>{e.push(`${lab[k]||k}: ${s}`);K[k]='e'},W=(k,s)=>{w.push(`${lab[k]||k}: ${s}`);if(!K[k])K[k]='w'};
+ for(const k in lab){if(k==='id')continue;const v=+val(k);
+  if(!Number.isFinite(v)){E(k,'enter a number');continue}
+  if(v<0){E(k,`cannot be negative (${v})`);continue}
+  if(DK.test(k)){if(v!==0&&!BD.includes(v))E(k,`${v} mm is not a standard bar size (${BD.join(', ')})`);continue}
+  if(k==='legs'){if(v!==2&&v!==4)E(k,'must be 2 or 4');continue}
+  if(k==='shape'||k==='auto'){if(v!==0&&v!==1)E(k,'must be 0 or 1');continue}
+  if((k==='nos'||/N$/.test(k))&&!Number.isInteger(v))E(k,`must be a whole number (${v})`);
+  const r=RG[k];if(!r)continue;
+  if(v<r[0])E(k,`${v} is below the minimum ${r[0]}`);
+  else if(v>r[1]*3)E(k,`${v} is far outside the realistic range (up to ${r[1]}); check for a typing error`);
+  else if(v>r[1])W(k,`${v} is unusually large (typical maximum ${r[1]}); please confirm`)}
+ if(n('D2')>0&&n('D2')<100)E('D2','must be 0 or at least 100');m=eff(t,m);const c=n('c');
+ if(t==='beam'||t==='col'){const Wd=+m.shape===1?n('D'):n('b'),Dd=n('D');
+  if(Wd-2*c<=0||Dd-2*c<=0)E('c','cover is too large for the section size');
+  if(t==='beam'){
+   [['topN','topD'],['top2N','top2D'],['botN','botD'],['bot2N','bot2D']].forEach(([a,d])=>{const N=n(a),dd=n(d),av=Wd-2*(c+n('stD'))-dd;if(N>1&&av>0&&av/(N-1)-dd<Math.max(dd,25))W(a,`${N} × ${dd} mm bars do not fit in one row with clear spacing of max(dia, 25 mm), Cl 26.3.2`)});
+   if(2*n('exLen')>n('L'))W('exLen','longer than half the span');
+   if(2*n('top2Cut')>=n('L')-2*c)E('top2Cut','leaves no bar length');
+   if(2*n('bot2Cut')>=n('L')-2*c)E('bot2Cut','leaves no bar length');
+   if(n('bentN')>n('botN'))E('bentN','cannot exceed the number of bottom bars');if(n('bentN')>0&&2*(n('bentX')+Math.min(n('D'),n('D2')||n('D'))-2*c-2*n('stD')-n('botD'))>=n('L')-2*c)E('bentX','bend zone is longer than the span');
+   if(n('topN')+n('botN')===0)W('botN','no main bars defined')}}
+ if(t==='wall'){if(n('t')-2*c<=0)E('c','cover is too large for the stem thickness');if(n('B')<=n('Lt')+n('t'))E('B','base width must exceed toe length + stem thickness');if(n('T')-2*c<=0)E('c','cover is too large for the base thickness')}
+ if(t==='foot'||t==='slab'){if(n('L')-2*c<=0||n('B')-2*c<=0||n('T')-2*c<=0)E('c','cover is too large for the plate size')}
+ const pr=(a,d)=>{if(n(a)>0&&n(d)===0)E(d,'set a bar diameter, or set the nos to 0')};
+ if(t==='beam'){[['topN','topD'],['top2N','top2D'],['botN','botD'],['bot2N','bot2D'],['exN','exD'],['sideN','sideD']].forEach(p=>pr(...p));if(n('stD')===0)E('stD','stirrups are required');if(n('ds')>=n('D'))E('ds','must be less than the beam depth')}
+ if(t==='col'){pr('vN','vD');if(n('stD')===0)E('stD','ties are required');const mn=n('shape')===1?6:4;if(n('vN')<mn)E('vN',`needs at least ${mn} bars, Cl 26.5.3.1(b)`)}
+ if(duplicateCount(t,m.id)>1)W('id','this mark is used more than once in this list');
+ return {e,w,k:K}}
+function clampM(t,m){const r={...m};for(const k in RG)if(k in r){const v=+r[k]||0;r[k]=Math.min(Math.max(v,RG[k][0]),RG[k][1]);if(k==='nos'||/N$/.test(k))r[k]=Math.round(r[k])}
+ for(const k in r)if(DK.test(k)){const v=Math.max(+r[k]||0,0);r[k]=v&&!BD.includes(v)?BD.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a):v}
+ return r}
+const nosOf=m=>Math.max(+m.nos||1,1);
+
+/* ---------- UI ---------- */
+function renderTabs(){
+  $('#tabs').innerHTML=Object.keys(NAMES).map(k=>`<button class="${k===S.type?'on':''}" data-t="${k}">${PL[k]}</button>`).join('')}
+function size(t,m){const show=k=>fmt(toDisplay(m[k],k),displayUnits==='in'?2:0);return t==='beam'?`${show('b')}×${show('D')}×${show('L')} ${displayUnits}`:t==='col'?`${show('b')}×${show('D')}×${show('H')} ${displayUnits}`:t==='wall'?`${show('L')} × ${show('H')} ${displayUnits}`:`${show('L')}×${show('B')}×${show('T')} ${displayUnits}`}
+let schedulePage=0;
+const SCHEDULE_PAGE_SIZE=100;
+function renderList(){
+  const t=S.type,search=$('#search').value.trim().toLowerCase(),filter=$('#filter').value,sort=$('#sort').value,geometryFields=SCHEDULE_FIELDS[t];
+  $('#list thead').innerHTML=`<tr><th>Mark</th><th>Geometry (${displayUnits})</th><th>Nos</th><th>Steel (kg)</th></tr>`;
+  const rows=S.data[t].map((m,i)=>({m,i,s:size(t,m)}))
+    .filter(x=>!search||`${x.m.id} ${x.s}`.toLowerCase().includes(search))
+    .map(x=>({...x,q:calc(t,x.m)}))
+    .filter(x=>filter==='all'||(filter==='errors'?x.q.bad:!x.q.bad));
+  if(sort!=='index')rows.sort((a,b)=>{
+    const av=sort==='mark'?String(a.m.id):sort==='size'?a.s:sort==='nos'?nosOf(a.m):a.q.kg*nosOf(a.m);
+    const bv=sort==='mark'?String(b.m.id):sort==='size'?b.s:sort==='nos'?nosOf(b.m):b.q.kg*nosOf(b.m);
+    return typeof av==='string'?av.localeCompare(bv,undefined,{numeric:true,sensitivity:'base'}):av-bv;
+  });
+  const pages=Math.max(1,Math.ceil(rows.length/SCHEDULE_PAGE_SIZE));schedulePage=Math.min(schedulePage,pages-1);
+  const start=schedulePage*SCHEDULE_PAGE_SIZE,visible=rows.slice(start,start+SCHEDULE_PAGE_SIZE);
+  $('#list tbody').innerHTML=visible.map(({m,i,q})=>`<tr data-i="${i}" class="${i===S.sel[t]?'sel':''}"><td><input class="cell-edit" aria-label="Mark ${escapeHTML(m.id)}" data-edit="id" data-i="${i}" type="text" value="${escapeHTML(m.id)}"></td><td class="schedule-geometry"><div>${geometryFields.map(k=>{const label=fieldLabel(FIELDS[t].find(f=>f[0]===k)||[k,k]);return `<label title="${escapeHTML(label)}">${escapeHTML(k)}<input class="cell-edit geometry-edit" aria-label="${escapeHTML(m.id)} ${escapeHTML(label)}" data-edit="${k}" data-i="${i}" type="number" min="0" step="any" value="${escapeHTML(toDisplay(m[k]??0,k))}"></label>`}).join('')}</div></td><td><input class="cell-edit" aria-label="Member count for ${escapeHTML(m.id)}" data-edit="nos" data-i="${i}" type="number" min="1" step="1" value="${escapeHTML(nosOf(m))}"></td><td>${q.bad?'Error':fmt(q.kg*nosOf(m),3)}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--mute);padding:14px">No members match these filters</td></tr>';
+  $('#listCount').textContent=`${rows.length?start+1:0}–${Math.min(start+SCHEDULE_PAGE_SIZE,rows.length)} of ${rows.length} shown · ${S.data[t].length} total · edit mark, geometry, and count inline`;
+  $('#listPage').textContent=`${schedulePage+1} / ${pages}`;$('#listPrev').disabled=schedulePage===0;$('#listNext').disabled=schedulePage>=pages-1;
+}
+function renderForm(){
+  const m=mem();
+  $('#form').innerHTML=FIELDS[S.type].map(f=>f[0]==='#'?`<h3>${f[1]}</h3>`:`<label>${escapeHTML(fieldLabel(f))}<input data-k="${f[0]}" ${f[2]==='t'?'type="text"':'type="number" min="0" step="any"'} value="${escapeHTML(f[2]==='t'?m[f[0]]??0:toDisplay(m[f[0]]??0,f[0]))}"></label>`).join('')}
+function table(rows,head){return `<div class="scroll"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`}
+function assignmentChecks(){
+  const challenge=document.body.classList.contains('challenge-mode');
+  document.querySelectorAll('#mobileNav [data-panel]').forEach(button=>button.classList.toggle('on',button.dataset.panel===$('#app').dataset.mobilePanel));
+  if(challenge){$('#app').dataset.mobilePanel='input';document.querySelector('#mobileNav [data-panel="input"]').classList.add('on')}
+}
+function renderQty(){
+  if(cutPlan&&cutPlan.snapshot!==stateSnapshot()){cutPlan=null;$('#cutResults').textContent='Project changed; re-run the cutting plan.'}
+  const t=S.type,m=mem(),r=calc(t,m),n=nosOf(m),V=validate(t,m);
+  $('#qtitle').textContent=`${NAMES[t]} ${m.id}`;
+  $('#legend').innerHTML=r.bars.map(b=>`<span><i style="background:${b.col}"></i>${b.name}, ${b.d} mm</span>`).join('');
+  const rows=r.bars.map(b=>`<tr><td><i class="sw" style="background:${b.col}"></i>${b.name}</td><td>${b.d}</td><td>${b.n}</td><td>${fmt(b.len/1000,3)}</td><td>${fmt(b.tot,3)}</td><td>${fmt(b.kg,3)}</td></tr>`).join('');
+  const memberResults=`<div class="kv"><span>Concrete per member (Cum)</span><span>${fmt(r.conc,2)}</span><span>Shuttering per member (Sqm)</span><span>${fmt(r.shut,2)}</span><span>Steel per member (kg)</span><span>${fmt(r.kg,3)}</span><span>Steel intensity (kg/Cum)</span><span>${fmt(r.conc?r.kg/r.conc:0,2)}</span><span>Nos of members</span><span>${n}</span><span>Total for ${n} nos: concrete (Cum) / steel (kg)</span><span>${fmt(r.conc*n,2)} / ${fmt(r.kg*n,3)}</span></div>`
+   +table(rows,['Bar (per member)','Dia (mm)','Nos','Cut length (m)','Total length (m)','Weight (kg)'])
+   +`<details id="worked"><summary>Worked calculations — cut length, total length, and steel weight</summary><p>These are the app’s transparent calculation assumptions, not fabrication instructions. Check official clauses and approved drawings.</p>${r.bars.map(b=>workedCalculation(t,m,b)).join('')}</details>`;
+  {const ef=eff(t,m),au=(+m.auto&&(t==='beam'||t==='col'))?`<div class="ck"><b>Auto</b> ${t==='beam'?`bottom ${ef.botN}Ø${ef.botD}${ef.bot2N?` + ${ef.bot2N}Ø${ef.bot2D}`:''}, top ${ef.topN}Ø${ef.topD}${ef.top2N?` + ${ef.top2N}Ø${ef.top2D}`:''}, side ${ef.sideN} per face Ø${ef.sideD}`:`${ef.vN} vertical bars Ø${ef.vD}`}</div>`:'';
+   const labelFor=k=>FIELDS[t].find(f=>f[0]===k)?.[1]||k;
+   const jump=(text)=>{
+     const field=Object.keys(V.k).find(k=>V.k[k]==='e'&&text.startsWith(`${labelFor(k)}:`));
+     return field?`<button class="validation-link" data-field="${field}">${escapeHTML(text)}</button>`:`<div>${escapeHTML(text)}</div>`;
+   };
+   const errors=V.e.map(jump).join(''),warnings=V.w.map(x=>`<div>${escapeHTML(x)}</div>`).join('');
+   const status=`<section class="validation-summary"><h2>Input validation</h2>${V.e.length?`<div class="ck bad"><b>${V.e.length} error${V.e.length===1?'':'s'}</b> Click an error to jump to its field.</div>${errors}<p style="color:var(--mute)">This member is excluded from project quantities until errors are fixed.</p>`:'<div class="ck"><b>No input errors</b></div>'}${warnings?`<div class="ck"><b>Warnings</b></div>${warnings}`:''}</section>`;
+   const seismic=['III','IV','V'].includes(S.cfg.seismicZone)?`<section class="validation-summary"><h2>IS 13920:2016 seismic screening — Zone ${S.cfg.seismicZone}</h2><p>Limited beam/column detailing screens only. Joint design, building system classification, ductility analysis, and complete confinement detailing are not checked.</p></section>`:`<section class="validation-summary"><h2>IS 13920:2016 seismic screening</h2><p>Not active. Select Zone III, IV, or V to show limited beam/column screens; Zone II and unspecified cases are not assessed by these rules.</p></section>`;
+   const auto=au?`<h2>Calculated reinforcement</h2>${au}`:'';
+   const checkHtml=status+seismic+auto+beamLoadHTML(t,m)+checks(t,m).map(c=>`<div class="ck ${c.ok===false?'bad':''}"><b>${c.ok===null?'Info':c.screen?(c.ok?'Screen met':'Screen not met'):c.ok?'Pass':'Check'}</b> ${escapeHTML(c.txt)}</div>`).join('');
+   $('#qsel').innerHTML=`<div id="checksPanel">${checkHtml}</div><div id="resultsPanel">${memberResults}</div>`;
+  document.querySelectorAll('#form input').forEach(i=>{i.classList.toggle('bad',V.k[i.dataset.k]==='e');i.classList.toggle('warn',V.k[i.dataset.k]==='w');const k=i.dataset.k,ov=+m.auto&&ef[k]!==undefined&&+ef[k]!==+m[k];i.classList.toggle('auto',!!ov);i.title=ov?`Auto value in use: ${ef[k]}`:''})}
+  const tot={},byDia={},badL=[],bb=[];let C=0,K=0,SH=0;
+  for(const ty in S.data)for(const x of S.data[ty]){const q=calc(ty,x),k=nosOf(x);q.bars.forEach(b=>bb.push([`${NAMES[ty]} ${x.id}`,b.name,b.profile,b.dims,b.d,b.n,k,b.n*k,b.len/1000,b.tot*k,b.kg*k]));if(q.bad)badL.push(`${NAMES[ty]} ${x.id}`);
+    tot[ty]=tot[ty]||{c:0,s:0,k:0,n:0};tot[ty].c+=q.conc*k;tot[ty].s+=q.shut*k;tot[ty].k+=q.kg*k;tot[ty].n+=k;
+    C+=q.conc*k;SH+=q.shut*k;K+=q.kg*k;
+    q.bars.forEach(b=>{const e=byDia[b.d]=byDia[b.d]||{l:0,k:0};e.l+=b.tot*k;e.k+=b.kg*k})}
+  const tr=Object.keys(tot).map(ty=>`<tr><td>${NAMES[ty]}s (${tot[ty].n})</td><td>${fmt(tot[ty].c,2)}</td><td>${fmt(tot[ty].s,2)}</td><td>${fmt(tot[ty].k,3)}</td></tr>`).join('')+`<tr class="tot"><td>Total</td><td>${fmt(C,2)}</td><td>${fmt(SH,2)}</td><td>${fmt(K,3)}</td></tr>`;
+  const dd=Object.keys(byDia).map(Number).sort((a,b)=>a-b).map(d=>`<tr><td>${d}</td><td>${fmt(byDia[d].l,3)}</td><td>${fmt(byDia[d].k,3)}</td><td>${fmt(byDia[d].k/1000,3)}</td></tr>`).join('')+`<tr class="tot"><td>Total</td><td></td><td>${fmt(K,3)}</td><td>${fmt(K/1000,3)}</td></tr>`;
+  $('#qall').innerHTML=(badL.length?`<div class="ck bad"><b>Excluded</b> ${badL.length} member(s) with input errors are not in these totals: ${badL.map(escapeHTML).join(', ')}</div>`:'')+table(tr,['Type (nos)','Concrete (Cum)','Shuttering (Sqm)','Steel (kg)'])
+   +'<h2>Steel by diameter</h2>'+table(dd,['Dia (mm)','Length (m)','Weight (kg)','Weight (MT)'])
+   +'<h2>Bar bending schedule, all members</h2>'+table(bb.slice(0,200).map(r=>`<tr><td>${escapeHTML(r[0])}</td><td>${escapeHTML(r[1])}</td><td>${escapeHTML(r[2])}</td><td>${escapeHTML(r[3])}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td><td>${fmt(r[8],3)}</td><td>${fmt(r[9],3)}</td><td>${fmt(r[10],3)}</td></tr>`).join(''),['Member','Bar','Profile (app ref)','Shape dimensions (mm)','Dia (mm)','Nos per member','Members','Total nos','Cut length (m)','Total length (m)','Weight (kg)'])+(bb.length>200?`<p style="color:var(--mute)">Showing 200 of ${bb.length} BBS rows. Copy summary exports all rows; the print report includes all.</p>`:'')+'<p>Profile references are descriptive app labels, not official IS 2502 shape codes. Confirm hooks, bend radii, anchorage, splice locations, and cutting lengths against issued drawings and site requirements.</p><h2>Wastage</h2>'+table(`<tr><td>Concrete (Cum)</td><td>${fmt(C,2)}</td><td>${fmt(C*.025,2)}</td><td>${fmt(C*1.025,2)}</td></tr><tr><td>Steel (MT)</td><td>${fmt(K/1000,3)}</td><td>${fmt(K*.05/1000,3)}</td><td>${fmt(K*1.05/1000,3)}</td></tr>`,['Item','Net','Wastage','Gross'])+'<h2>Estimated cost, net quantities at your rates</h2>'+table(`<tr><td>Concrete</td><td>${fmt(C,2)} Cum</td><td>${inr(S.cfg.rc)}</td><td>${inr(C*S.cfg.rc)}</td></tr><tr><td>Shuttering</td><td>${fmt(SH,2)} Sqm</td><td>${inr(S.cfg.rs)}</td><td>${inr(SH*S.cfg.rs)}</td></tr><tr><td>Steel</td><td>${fmt(K,3)} kg</td><td>${inr(S.cfg.rk)}</td><td>${inr(K*S.cfg.rk)}</td></tr><tr class="tot"><td>Total</td><td></td><td></td><td>${inr(C*S.cfg.rc+SH*S.cfg.rs+K*S.cfg.rk)}</td></tr>`,['Item','Quantity','Rate','Amount']);
+  window._sum={tot,byDia,C,SH,K,bad:badL,bb}}
+const STOCK_LENGTH=12000;
+let cutPlan=null;
+function renderCutPlan(plan){
+  const summary=plan.diameters.map(d=>`<tr><td>${d.dia}</td><td>${d.pieces}</td><td>${d.bars}</td><td>${fmt(d.required/1000,3)}</td><td>${fmt(d.waste/1000,3)}</td><td>${fmt(d.bars?d.waste/(d.bars*STOCK_LENGTH)*100:0,1)}%</td></tr>`).join('');
+  const patterns=plan.patterns.slice(0,200).map(p=>`<tr><td>${p.dia}</td><td>${escapeHTML(p.pattern)}</td><td>${p.bars}</td><td>${fmt(p.waste,0)}</td></tr>`).join('');
+  const oversized=plan.oversized.map(x=>`<tr><td>${x.dia}</td><td>${fmt(x.length,0)}</td><td>${x.count}</td></tr>`).join('');
+  return `<h3>By diameter</h3>${summary?table(summary,['Dia (mm)','Pieces','Stock bars','Required length (m)','Waste (m)','Waste']):'<p>No valid reinforcement bars to optimize.</p>'}<h3>Cutting patterns</h3>${patterns?table(patterns,['Dia (mm)','Cuts per stock bar (mm)','Bars with pattern','Waste per bar (mm)']):'<p>No stock-bar patterns generated.</p>'}${plan.patterns.length>200?`<p>Showing 200 of ${plan.patterns.length} patterns. Copy the plan for the complete list.</p>`:''}${plan.oversized.length?`<h3>Pieces longer than stock</h3>${table(oversized,['Dia (mm)','Cut length (mm)','Pieces'])}<p>These pieces are not assigned. A designer must detail any splice or select longer stock.</p>`:''}<p>Estimate only: first-fit decreasing, no saw kerf or splice allowance. Verify stock availability and cut details before ordering.</p><button class="btn" id="copyCuts">Copy complete cut plan</button>`;
+}
+async function makeCutPlan(){
+  const pieces=new Map();
+  for(const row of window._sum.bb){
+    const dia=Number(row[4]),length=Math.ceil(Number(row[8])*1000-1e-8),count=Math.max(0,Math.floor(Number(row[7])||0));
+    if(!(dia>0&&length>0&&count>0))continue;
+    const key=`${dia}:${length}`,item=pieces.get(key)||{dia,length,count:0};
+    item.count+=count;pieces.set(key,item);
+  }
+  const groups=new Map();
+  for(const item of pieces.values()){const a=groups.get(item.dia)||[];a.push(item);groups.set(item.dia,a)}
+  const diameters=[],patterns=[],oversized=[];
+  for(const [dia,items] of groups){
+    items.sort((a,b)=>b.length-a.length);
+    const bins=[];let capacity=16,tree=new Float64Array(capacity*2),placed=0;
+    const grow=()=>{
+      capacity*=2;tree=new Float64Array(capacity*2);
+      for(let i=0;i<bins.length;i++)tree[capacity+i]=STOCK_LENGTH-bins[i].used;
+      for(let i=capacity-1;i>0;i--)tree[i]=Math.max(tree[i*2],tree[i*2+1]);
+    };
+    const setRemaining=(index,value)=>{
+      let node=capacity+index;tree[node]=value;
+      for(node=Math.floor(node/2);node;node=Math.floor(node/2))tree[node]=Math.max(tree[node*2],tree[node*2+1]);
+    };
+    const firstFit=length=>{
+      if(tree[1]+1e-8<length)return -1;
+      let node=1;
+      while(node<capacity)node=tree[node*2]+1e-8>=length?node*2:node*2+1;
+      const index=node-capacity;return index<bins.length?index:-1;
+    };
+    let required=0,pieceCount=0;
+    for(const item of items){
+      if(item.length>STOCK_LENGTH){oversized.push(item);continue}
+      required+=item.length*item.count;pieceCount+=item.count;
+      let remaining=item.count;
+      while(remaining>0){
+        let index=firstFit(item.length);
+        if(index<0){
+          if(bins.length>=capacity)grow();
+          index=bins.length;bins.push({used:0,cuts:new Map()});setRemaining(index,STOCK_LENGTH);
+        }
+        const available=STOCK_LENGTH-bins[index].used;
+        const count=Math.min(remaining,Math.floor((available+1e-8)/item.length));
+        if(count<1)throw new Error('Cut optimizer could not place a valid bar length');
+        bins[index].used+=item.length*count;
+        bins[index].cuts.set(item.length,(bins[index].cuts.get(item.length)||0)+count);
+        setRemaining(index,STOCK_LENGTH-bins[index].used);remaining-=count;placed+=count;
+        if(placed>=10000){placed=0;await new Promise(resolve=>requestAnimationFrame(resolve))}
+      }
+    }
+    const patternsForDia=new Map();
+    bins.forEach(bin=>{
+      const pattern=[...bin.cuts].sort((a,b)=>b[0]-a[0]).map(([length,count])=>`${count} × ${length}`).join(' + ');
+      const key=pattern,entry=patternsForDia.get(key)||{dia,pattern,bars:0,waste:STOCK_LENGTH-bin.used};
+      entry.bars++;patternsForDia.set(key,entry);
+    });
+    const diaPatterns=[...patternsForDia.values()];
+    patterns.push(...diaPatterns);
+    diameters.push({dia,pieces:pieceCount,bars:bins.length,required,waste:bins.length*STOCK_LENGTH-bins.reduce((sum,b)=>sum+b.used,0)});
+  }
+  return {diameters,patterns,oversized};
+}
+$('#cutPlan').onclick=async e=>{
+  const button=e.currentTarget;button.disabled=true;$('#cutResults').textContent='Optimizing stock-bar cuts…';
+  try{
+    renderQty();const snapshot=stateSnapshot(),plan=await makeCutPlan();
+    if(snapshot!==stateSnapshot()){cutPlan=null;$('#cutResults').textContent='Project changed during optimization; run the plan again.';return}
+    cutPlan={...plan,snapshot};$('#cutResults').innerHTML=renderCutPlan(cutPlan);
+  }catch(error){console.error('Stock-bar optimization failed:',error);$('#cutResults').textContent='Cut optimization failed: '+(error.message||'unknown error')}
+  finally{button.disabled=false}
+};
+$('#cutResults').addEventListener('click',async e=>{
+  if(e.target.id!=='copyCuts'||!cutPlan)return;
+  const lines=['Cutting summary by diameter','Dia (mm)\tPieces\tStock bars\tRequired length (m)\tWaste (m)\tWaste (%)',...cutPlan.diameters.map(d=>[d.dia,d.pieces,d.bars,fmt(d.required/1000,3),fmt(d.waste/1000,3),fmt(d.bars?d.waste/(d.bars*STOCK_LENGTH)*100:0,1)].join('\t')),'','Cutting patterns','Dia (mm)\tCuts per stock bar (mm)\tBars with pattern\tWaste per bar (mm)',...cutPlan.patterns.map(p=>[p.dia,p.pattern,p.bars,fmt(p.waste,0)].join('\t')),'','Pieces longer than stock','Dia (mm)\tCut length (mm)\tCount',...cutPlan.oversized.map(p=>[p.dia,fmt(p.length,0),p.count].join('\t'))].join('\n');
+  try{await navigator.clipboard.writeText(lines);note('Complete cut plan copied')}
+  catch(error){console.error('Cut plan copy failed:',error);note('Cut plan copy blocked by browser')}
+});
+function renderReport(){
+  const s=window._sum,memberChecks=[];
+  for(const ty of Object.keys(NAMES))for(const x of S.data[ty]){
+    const errors=validate(ty,x).e,detail=checks(ty,x),screen=beamLoadCheck(ty,x);
+    if(screen?.checks){detail.push({ok:null,screen:true,txt:`UDL screen assumptions/results: factored UDL ${fmt(screen.wu,2)} kN/m; Mu ${fmt(screen.mu,2)} kN·m; Vu ${fmt(screen.vu,2)} kN; rectangular moment limit ${fmt(screen.mr,2)} kN·m.`});detail.push(...screen.checks.map(c=>({ok:c.ok,screen:true,txt:`Structural screen: ${c.message}`})))}
+    if(screen?.error)detail.push({ok:false,txt:`Structural screen: ${screen.error}`});
+    memberChecks.push(`<tr><td>${escapeHTML(NAMES[ty])} ${escapeHTML(x.id)}</td><td>${errors.length?'Input error':detail.some(c=>c.ok===false)?'Check required':'No input errors'}</td><td>${[...errors.map(e=>`Input error: ${e}`),...detail.map(c=>`${c.ok===null?'Info':c.screen?(c.ok?'Screen met':'Screen not met'):c.ok?'Pass':'Check'}: ${c.txt}`)].map(escapeHTML).join('<br>')}</td></tr>`);
+  }
+  const fullBbs=table(s.bb.map(r=>`<tr><td>${escapeHTML(r[0])}</td><td>${escapeHTML(r[1])}</td><td>${escapeHTML(r[2])}</td><td>${escapeHTML(r[3])}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td><td>${fmt(r[8],3)}</td><td>${fmt(r[9],3)}</td><td>${fmt(r[10],3)}</td></tr>`).join(''),['Member','Bar','Profile (app ref)','Shape dimensions (mm)','Dia (mm)','Nos per member','Members','Total nos','Cut length (m)','Total length (m)','Weight (kg)']);
+  const cutReport=cutPlan&&cutPlan.snapshot===stateSnapshot()?`<section class="report-section"><h2>12 m stock-bar cutting plan</h2>${renderCutPlan(cutPlan).replace(/<button class="btn" id="copyCuts">Copy complete cut plan<\/button>/,'')}</section>`:'';
+  $('#report').innerHTML=`<h1>RCC Schedule — Project Report</h1><p>Generated ${escapeHTML(new Date().toLocaleString())} · Concrete M${escapeHTML(S.cfg.fck)} · Steel Fe${escapeHTML(S.cfg.fy)} · Seismic zone ${escapeHTML(S.cfg.seismicZone)}</p><section class="report-section"><h2>Project quantities and cost at entered rates</h2>${$('#qall').innerHTML.replace(/<h2>Bar bending schedule, all members<\/h2>[\s\S]*?<p>Profile references are descriptive app labels, not official IS 2502 shape codes\. Confirm hooks, bend radii, anchorage, splice locations, and cutting lengths against issued drawings and site requirements\.<\/p>/,`<h2>Bar bending schedule, all members</h2>${fullBbs}<p>Profile references are descriptive app labels, not official IS 2502 shape codes. Confirm hooks, bend radii, anchorage, splice locations, and cutting lengths against issued drawings and site requirements.</p>`)}</section>${cutReport}<section class="report-section"><h2>Member-level detailing checks</h2>${table(memberChecks.join(''),['Member','Status','Input errors and detailing checks'])}<p>Detailing checks and UDL capacity screens are preliminary only, not a substitute for structural design review.</p></section>`;
+}
+
+/* ---------- 3D ---------- */
+const vp=$('#vp');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(max-width: 760px)').matches?1.5:2));renderer.setClearColor(0xffffff);
+vp.appendChild(renderer.domElement);
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(40,1,0.01,500);
+scene.add(new THREE.AmbientLight(0xffffff,.75));
+const dl=new THREE.DirectionalLight(0xffffff,.6);dl.position.set(3,6,4);scene.add(dl);
+const grid=new THREE.GridHelper(40,40,0xcccccc,0xe6e6e6);scene.add(grid);
+const MAT={main:new THREE.MeshLambertMaterial({color:0x111111}),sec:new THREE.MeshLambertMaterial({color:0x8a8a8a}),
+  conc:new THREE.MeshLambertMaterial({color:0xcfcfcf,transparent:true,opacity:.16,depthWrite:false}),edge:new THREE.LineBasicMaterial({color:0x555555})};
+let root=new THREE.Group();scene.add(root);
+const layerOn={conc:true,main:true,sec:true};
+const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+function cyl(g,a,b,d,name){if(!(d>0))return;const mat=cm(COL[name]),layer=LAY[name]||'sec';snaps.push({o:g,p:a.clone(),l:layer},{o:g,p:b.clone(),l:layer});
+  const dir=b.clone().sub(a),len=dir.length();if(len<1e-6)return;
+  const r=Math.max(d/1600,.003),m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,6),mat);
+  m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(V3(0,1,0),dir.normalize());m.userData.layer=layer;m.userData.barName=name;m.userData.bp=m.position.clone();m.userData.ex=EX(name,m.position);if(!FB[name])FB[name]=m;g.add(m)}
+function box(g,x0,y0,z0,x1,y1,z1){
+  const geo=new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0),m=new THREE.Mesh(geo,MAT.conc);
+  for(const x of[x0,x1])for(const y of[y0,y1])for(const z of[z0,z1])snaps.push({o:g,p:V3(x,y,z),l:'conc'});
+  m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);m.userData.layer='conc';g.add(m);
+  const e=new THREE.LineSegments(new THREE.EdgesGeometry(geo),MAT.edge);e.position.copy(m.position);e.userData.layer='conc';m.userData.bp=e.userData.bp=m.position.clone();m.userData.ex=e.userData.ex=V3(0,0,S.type==='col'?1.6:-1.6);g.add(e)}
+const K=0.001;
+function cbox(g,R,L){const geo=new THREE.CylinderGeometry(R,R,L,matchMedia('(max-width: 760px)').matches?20:40);geo.rotateX(Math.PI/2);
+  const m=new THREE.Mesh(geo,MAT.conc),e=new THREE.LineSegments(new THREE.EdgesGeometry(geo),MAT.edge);
+  m.userData.layer=e.userData.layer='conc';m.userData.bp=m.position.clone();e.userData.bp=m.position.clone();m.userData.ex=e.userData.ex=V3(0,0,1.6);g.add(m);g.add(e)}
+function tbox(g,pts,b){const sh=new THREE.Shape(pts.map(p=>new THREE.Vector2(p[0]*K,p[1]*K)));
+  const geo=new THREE.ExtrudeGeometry(sh,{depth:b*K,bevelEnabled:false});geo.rotateY(-Math.PI/2);geo.translate(b*K/2,0,0);
+  const m=new THREE.Mesh(geo,MAT.conc),e=new THREE.LineSegments(new THREE.EdgesGeometry(geo),MAT.edge);
+  m.userData.layer=e.userData.layer='conc';m.userData.bp=m.position.clone();e.userData.bp=m.position.clone();m.userData.ex=e.userData.ex=V3(0,0,-1.6);
+  pts.forEach(p=>{for(const x of[-b/2,b/2])snaps.push({o:g,p:V3(x*K,p[1]*K,p[0]*K),l:'conc'})});g.add(m);g.add(e)}
+function buildRC(t,m){
+  const g=new THREE.Group(),inner=new THREE.Group();g.add(inner);
+  const b=m.b,D=m.D,c=m.c,st=m.stD,L=t==='beam'?m.L:m.H,bg=t==='beam'?bgeo(m):null;
+  if(t==='col'&&+m.shape===1)cbox(inner,D/2*K,L*K);
+  else if(bg&&bg.D1!==bg.D2)tbox(inner,[[-L/2,bg.Yt],[L/2,bg.Yt],[L/2,bg.Ys(L/2)],[-L/2,bg.Ys(-L/2)]],b);
+  else box(inner,-b*K/2,-D*K/2,-L*K/2,b*K/2,D*K/2,L*K/2);
+  let Z;
+  if(t==='beam'){
+    beamGroups(m).forEach(q=>q.xs.forEach(x=>{for(let k=0;k<q.pts.length-1;k++){const p=q.pts[k],r=q.pts[k+1];cyl(inner,V3(x*K,p[1]*K,p[0]*K),V3(x*K,r[1]*K,r[0]*K),q.d,q.nm)}}));
+    Z=stirZ(L,c,m.s1,m.s2);
+  }else{
+    const P=+m.shape===1?Array.from({length:m.vN},(_,i)=>{const r=D/2-c-st-m.vD/2,a=2*Math.PI*i/m.vN;return[r*Math.cos(a),r*Math.sin(a)]}):perim(b,D,c,st,m.vD,m.vN);
+    P.forEach(p=>cyl(inner,V3(p[0]*K,p[1]*K,(-L/2+c)*K),V3(p[0]*K,p[1]*K,(L/2-c)*K),m.vD,'Vertical bars'));
+    Z=stirZ(L,c,m.s,m.s)}
+  const hx=(b/2-c-st/2)*K,hy=D/2-c-st/2,yz=z=>bg?[bg.Ys(z)+c+st/2,bg.Yt-c-st/2]:[-hy,hy];
+  const ring=(z,hw,nm)=>{const [y0,y1]=yz(z),C=[[-hw,y0],[hw,y0],[hw,y1],[-hw,y1]];for(let i=0;i<4;i++){const a=C[i],e=C[(i+1)%4];cyl(inner,V3(a[0],a[1]*K,z*K),V3(e[0],e[1]*K,z*K),st,nm)}};
+  Z.forEach(z=>{if(t==='col'&&+m.shape===1){  const R=(D/2-c-st/2)*K,N=matchMedia('(max-width: 760px)').matches?12:24;for(let i=0;i<N;i++){const a1=2*Math.PI*i/N,a2=2*Math.PI*(i+1)/N;cyl(inner,V3(R*Math.cos(a1),R*Math.sin(a1),z*K),V3(R*Math.cos(a2),R*Math.sin(a2),z*K),st,'Ties')}return}
+    ring(z,hx,t==='beam'?'Stirrups':'Ties')});
+  if(t==='beam'&&m.legs>=4)Z.forEach(z=>ring(z,hx/2,'Inner stirrups'));
+  if(t==='col')inner.rotation.x=-Math.PI/2;
+  g.userData.dims=t==='beam'?[b,bg.Dx,L]:[b,L,D];
+  g.position.y=(t==='col'?L:bg.Dx)*K/2;
+  return g}
+function buildPlate(m){const g=new THREE.Group(),{L,B,T,c}=m,v=k=>+m[k]||0;
+  box(g,-L*K/2,-T*K/2,-B*K/2,L*K/2,T*K/2,B*K/2);
+  const yb=-T/2+c,yt=T/2-c,bx=v('bxD'),by=v('byD'),tx=v('txD'),ty=v('tyD');
+  const X=(nm,d,s,y)=>{if(d>0&&s>0)for(let z=-B/2+c;z<=B/2-c+.1;z+=Math.max(s,25))cyl(g,V3((-L/2+c)*K,y*K,z*K),V3((L/2-c)*K,y*K,z*K),d,nm)};
+  const Y=(nm,d,s,y)=>{if(d>0&&s>0)for(let x=-L/2+c;x<=L/2-c+.1;x+=Math.max(s,25))cyl(g,V3(x*K,y*K,(-B/2+c)*K),V3(x*K,y*K,(B/2-c)*K),d,nm)};
+  X('Mesh bottom X',bx,v('bxS'),yb+bx/2);Y('Mesh bottom Y',by,v('byS'),yb+bx+by/2);
+  X('Mesh top X',tx,v('txS'),yt-ty-tx/2);Y('Mesh top Y',ty,v('tyS'),yt-ty/2);
+  g.userData.dims=[L,T,B];g.position.y=T*K/2;return g}
+function buildWall(m,fullLength=false){
+  const g=new THREE.Group(),{L,H,t,B,T,Lt,c}=m,Ls=fullLength?L:Math.min(L,3000),zs=-Ls/2;
+  box(g,0,0,zs*K,B*K,T*K,(zs+Ls)*K);box(g,Lt*K,T*K,zs*K,(Lt+t)*K,(T+H)*K,(zs+Ls)*K);
+  const ze=(Ls/2-c)*K,zb=(-Ls/2+c)*K,M='main',S2='sec';
+  const xe=Lt+t-c-m.v1D/2,xf=Lt+c+m.v2D/2;
+  for(let z=zs+c;z<=Ls/2-c+.1;z+=sp(m.v1S))cyl(g,V3(xe*K,(c)*K,z*K),V3(xe*K,(T+H-c)*K,z*K),m.v1D,'Stem vertical, earth face');
+  for(let z=zs+c;z<=Ls/2-c+.1;z+=sp(m.v2S))cyl(g,V3(xf*K,(c)*K,z*K),V3(xf*K,(T+H-c)*K,z*K),m.v2D,'Stem vertical, front face');
+  for(let y=T+c;y<=T+H-c+.1;y+=sp(m.hS))for(const x of[xe-m.v1D/2-m.hD/2,xf+m.v2D/2+m.hD/2])cyl(g,V3(x*K,y*K,zb),V3(x*K,y*K,ze),m.hD,'Horizontal, both faces');
+  const yt=T-c-m.btD/2,yb=c+m.btD/2;
+  for(let z=zs+c;z<=Ls/2-c+.1;z+=sp(m.btS))for(const y of[yt,yb])cyl(g,V3(c*K,y*K,z*K),V3((B-c)*K,y*K,z*K),m.btD,'Base transverse, top+bottom');
+  for(let x=c;x<=B-c+.1;x+=sp(m.blS))for(const y of[yt-m.btD/2-m.blD/2,yb+m.btD/2+m.blD/2])cyl(g,V3(x*K,y*K,zb),V3(x*K,y*K,ze),m.blD,'Base longitudinal, top+bottom');
+  g.position.x=-B*K/2;g.userData.dims=[B,T+H,Ls];return g}
+const orb={th:.8,ph:1.15,r:6,tg:V3(0,0,0)};
+function applyLayers(){updateBuildStage()}
+function setLayers(conc,main,sec){
+  Object.assign(layerOn,{conc,main,sec});
+  document.querySelectorAll('[data-l]').forEach(b=>b.classList.toggle('on',layerOn[b.dataset.l]));
+  applyLayers();requestRender();
+}
+const FB={},anns=[];let annOn=true;
+function dimsFor(t,m){const o=[],f=(a,b,tx)=>o.push([V3(...a.map(v=>v*K)),V3(...b.map(v=>v*K)),tx]);
+ if(t==='beam'){const g=bgeo(m),off=Math.max(100,.12*g.Dx),b=+m.b,L=g.L,Yb=g.Yt-g.Dx;
+  f([b/2+off,Yb-off,-L/2],[b/2+off,Yb-off,L/2],`L = ${lengthText(L)}`);
+  f([-b/2,g.Yt+off,-L/2],[b/2,g.Yt+off,-L/2],`b = ${lengthText(b)}`);
+  f([b/2+off,g.Yt,-L/2],[b/2+off,g.Ys(-L/2),-L/2],`D = ${lengthText(g.D1)}`);
+  if(g.D1!==g.D2)f([b/2+off,g.Yt,L/2],[b/2+off,g.Ys(L/2),L/2],`D2 = ${lengthText(g.D2)}`)}
+ else if(t==='col'){const b=+m.b,D=+m.D,H=+m.H,off=Math.max(100,.15*Math.max(b,D)),circ=+m.shape===1,w=circ?D:b;
+  f([w/2+off,-D/2,-H/2],[w/2+off,-D/2,H/2],`H = ${lengthText(H)}`);
+  f([-w/2,-D/2-off,-H/2],[w/2,-D/2-off,-H/2],circ?`\u00d8${lengthText(D)}`:`b = ${lengthText(b)}`);
+  if(!circ)f([w/2+off,-D/2,-H/2],[w/2+off,D/2,-H/2],`D = ${lengthText(D)}`)}
+ else if(t==='wall'){const B=+m.B,T=+m.T,H=+m.H,Lt=+m.Lt,tt=+m.t,zs=-Math.min(m.L,3000)/2,off=300;
+  f([0,-off,zs],[B,-off,zs],`B = ${lengthText(B)}`);f([B+off,T,zs],[B+off,T+H,zs],`H = ${lengthText(H)}`);
+  f([-off,0,zs],[-off,T,zs],`T = ${lengthText(T)}`);f([Lt,T+H+off,zs],[Lt+tt,T+H+off,zs],`t = ${lengthText(tt)}`)}
+ else{const L=+m.L,B=+m.B,T=+m.T,off=Math.max(80,.1*Math.max(L,B));
+  f([-L/2,-T/2-off,B/2],[L/2,-T/2-off,B/2],`L = ${lengthText(L)}`);f([L/2+off,-T/2,-B/2],[L/2+off,-T/2,B/2],`B = ${lengthText(B)}`);f([L/2+off,-T/2,B/2],[L/2+off,T/2,B/2],`T = ${lengthText(T)}`)}
+ return o}
+function applyAnn(){root.traverse(o=>{if(o.userData.ann)o.visible=annOn})}
+function annot(t,m,o){
+  anns.length=0;$('#alabels').innerHTML='';const pos=[];
+  const mk=(w,tx,col,l)=>{const el=document.createElement('div');el.className='al';el.innerHTML=(col?`<i style="background:${col}"></i>`:'')+tx;$('#alabels').appendChild(el);anns.push({el,w,l,width:el.offsetWidth,height:el.offsetHeight})};
+  dimsFor(t,m).forEach(([a,b,tx])=>{const d=b.clone().sub(a),pp=Math.abs(d.y)>.7*d.length()?V3(1,0,0):V3(0,1,0),tk=Math.max(d.length()*.02,.03);
+    [a,b].forEach(e=>pos.push(e.clone().addScaledVector(pp,-tk),e.clone().addScaledVector(pp,tk)));pos.push(a,b);
+    mk(()=>o.localToWorld(a.clone().add(b).multiplyScalar(.5)),tx)});
+  const q=calc(t,m);
+  if(!q.bad)q.bars.forEach(bb=>{const me=FB[bb.name];if(!me)return;
+    const tx=bb.name==='Stirrups'?`\u00d8${lengthText(bb.d)} stirrups @${lengthText(m.s1)}/${lengthText(m.s2)} (${bb.n} nos)`:bb.name==='Ties'?`\u00d8${lengthText(bb.d)} ties @${lengthText(m.s)} (${bb.n} nos)`: `${bb.n}-\u00d8${lengthText(bb.d)} ${bb.name}`;
+    mk(()=>me.getWorldPosition(V3()),tx,bb.col,LAY[bb.name]||'sec')});
+  const ls=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pos),new THREE.LineBasicMaterial({color:0x000000}));
+  ls.userData.ann=true;o.add(ls);applyAnn()}
+function alab(){
+  const r=vp.getBoundingClientRect(),placed=[];
+  anns.forEach(a=>{
+    if(!annOn||(a.l&&!layerOn[a.l])){a.el.style.display='none';return}
+    const q=a.w().project(camera),x=(q.x+1)/2*r.width,y=(1-q.y)/2*r.height;
+    if(q.z<=-1||q.z>=1||x<a.width/2||x+a.width/2>r.width||y<a.height/2||y+a.height/2>r.height){a.el.style.display='none';return}
+    a.el.style.left=x+'px';a.el.style.top=y+'px';
+    const box={left:x-a.width/2-4,right:x+a.width/2+4,top:y-a.height/2-4,bottom:y+a.height/2+4};
+    if(placed.some(p=>box.left<p.right&&box.right>p.left&&box.top<p.bottom&&box.bottom>p.top)){a.el.style.display='none';return}
+    a.el.style.display='block';placed.push(box);
+  })}
+let assemblyMode=false,buildUpMode=false,buildStage=4;
+const BUILD_STAGES=['Concrete outline','Main bars','Stirrups / ties','Side / distribution bars','Cover and complete cage'];
+function barBuildStage(name){
+  if(['Stirrups','Inner stirrups','Ties'].includes(name))return 2;
+  if(['Side bars','Horizontal, both faces','Mesh top X','Mesh top Y'].includes(name))return 3;
+  return 1;
+}
+function updateBuildStage(){
+  const stage=Math.max(0,Math.min(4,buildStage));
+  root.traverse(o=>{
+    if(!o.userData.layer)return;
+    const layerVisible=layerOn[o.userData.layer];
+    if(!buildUpMode){o.visible=layerVisible;return}
+    if(o.userData.layer==='conc'){o.visible=layerVisible&&(stage===0||stage===4);return}
+    const itemStage=barBuildStage(o.userData.barName||'');
+    o.visible=layerVisible&&stage>0&&stage<4&&itemStage<=stage||layerVisible&&stage===4;
+  });
+  $('#buildStage').value=stage;$('#buildStageLabel').textContent=BUILD_STAGES[stage];
+  $('#buildStage').disabled=!buildUpMode;
+  $('#buildToggle').textContent=`Build-up mode: ${buildUpMode?'on':'off'}`;
+  $('#buildToggle').classList.toggle('on',buildUpMode);
+}
+function buildAssembly(){
+  const member=t=>S.data[t][Math.max(0,Math.min(S.sel[t]||0,S.data[t].length-1))];
+  const selected={};
+  Object.keys(NAMES).forEach(t=>{const m=member(t);if(m&&!validate(t,m).e.length)selected[t]=eff(t,m)});
+  if(!selected.beam||!selected.col||!selected.foot)throw new Error('Assembly needs valid selected beam, column, and footing members');
+  const beam=selected.beam,col=selected.col,foot=selected.foot,slab=selected.slab,wall=selected.wall;
+  const baysX=Math.max(1,Math.min(4,+$('#assemblyBaysX').value||1)),baysZ=Math.max(1,Math.min(4,+$('#assemblyBaysZ').value||1));
+  const bay=beam.L*K,frameX=baysX*bay,frameZ=baysZ*bay,footT=foot.T*K,colTop=footT+col.H*K,depth=Math.max(beam.D,+beam.D2||beam.D)*K;
+  const startX=-frameX/2,startZ=-frameZ/2;
+  const assembly=new THREE.Group(),footPrototype=buildPlate(foot,'foot'),columnPrototype=buildRC('col',col);
+  for(let ix=0;ix<=baysX;ix++)for(let iz=0;iz<=baysZ;iz++){
+    const x=startX+ix*bay,z=startZ+iz*bay;
+    const f=footPrototype.clone(true);f.position.set(x,footT/2,z);assembly.add(f);
+    const c=columnPrototype.clone(true);c.position.set(x,footT+col.H*K/2,z);assembly.add(c);
+  }
+  const beamPrototype=buildRC('beam',beam);
+  for(let ix=0;ix<=baysX;ix++)for(let iz=0;iz<baysZ;iz++){
+    const b=beamPrototype.clone(true);b.position.set(startX+ix*bay,colTop-depth/2,startZ+(iz+.5)*bay);assembly.add(b);
+  }
+  for(let iz=0;iz<=baysZ;iz++)for(let ix=0;ix<baysX;ix++){
+    const b=beamPrototype.clone(true);b.rotation.y=Math.PI/2;b.position.set(startX+(ix+.5)*bay,colTop-depth/2,startZ+iz*bay);assembly.add(b);
+  }
+  if(slab)for(let ix=0;ix<baysX;ix++)for(let iz=0;iz<baysZ;iz++){
+    const s=buildPlate(slab,'slab');s.position.set(startX+(ix+.5)*bay,colTop-slab.T*K/2,startZ+(iz+.5)*bay);assembly.add(s);
+  }
+  let extentX=Math.max(frameX/2+foot.L*K/2,frameX/2+(slab?.L||0)*K/2);
+  let extentZ=Math.max(frameZ/2+foot.B*K/2,frameZ/2+(slab?.B||0)*K/2);
+  if(wall){
+    const w=buildWall(wall),wallCenter=frameX/2+Math.max(col.b,col.D)*K/2+wall.B*K/2+.5;
+    w.position.x+=wallCenter;assembly.add(w);extentX=Math.max(extentX,wallCenter+wall.B*K/2);extentZ=Math.max(extentZ,wall.L*K/2);
+  }
+  snaps.length=0;
+  assembly.userData.dims=[Math.max(1,extentX*2/K),Math.max(colTop,((wall?.T||0)+(wall?.H||0))*K)/K,Math.max(1,extentZ*2/K)];
+  assembly.userData.targetY=colTop/2;
+  assembly.userData.bays={x:baysX,z:baysZ};
+  return assembly;
+}
+function build(fit){
+  scene.remove(root);root.traverse(o=>{if(o.geometry)o.geometry.dispose()});snaps.length=0;Object.keys(FB).forEach(k=>delete FB[k]);clearMeasure();
+  const t=S.type,m0=mem(),bad=validate(t,m0).e.length,m=eff(t,bad?clampM(t,m0):m0);
+  root=new THREE.Group();const g=assemblyMode?buildAssembly():t==='wall'?buildWall(m):t==='foot'||t==='slab'?buildPlate(m):buildRC(t,m);root.add(g);scene.add(root);applyLayers();exList=[];root.traverse(o=>{if(o.userData.ex)exList.push(o)});
+  if(assemblyMode){anns.length=0;$('#alabels').innerHTML='';exT=exF=0;$('#ex').value=0}
+  else annot(t,m,(t==='beam'||t==='col')?g.children[0]:g);
+  const d=g.userData.dims,mx=Math.max(...d)*K;exS=mx*.45;
+  grid.position.y=0;
+  if(fit){orb.r=mx*1.9+.5;orb.tg.set(0,assemblyMode?g.userData.targetY:t==='wall'?(m.T+m.H)*K/2:g.position.y,0);view('iso')}
+  $('#assembly').classList.toggle('on',assemblyMode);$('#assembly').textContent=assemblyMode?'Single member view':'Assembly view';
+  $('#dxf').disabled=assemblyMode;$('#ann').disabled=assemblyMode;$('#ex').disabled=assemblyMode;
+  $('#info').textContent=assemblyMode?`Illustrative ${g.userData.bays.x} × ${g.userData.bays.z}-bay frame from selected members. Placement is schematic; quantities remain member-level.`:`${NAMES[t]} ${m.id}  ${t==='beam'?`${lengthText(m.b)} × ${lengthText(m.D)}${+m.D2&&+m.D2!==+m.D?' / '+lengthText(m.D2):''} × ${lengthText(m.L)}`:t==='col'?`${lengthText(m.b)} × ${lengthText(m.D)} × ${lengthText(m.H)}`:t==='wall'?`L ${lengthText(m.L)}, H ${lengthText(m.H)}, base ${lengthText(m.B)} × ${lengthText(m.T)}`:`${lengthText(m.L)} × ${lengthText(m.B)} × ${lengthText(m.T)}`}${t==='wall'&&m.L>3000?`  (3D preview capped at ${lengthText(3000)}; quantities use full length)`:''}${bad?'  (invalid input: 3D shows limited values, quantities excluded)':''}`;
+  requestRender();
+}
+function view(v){
+  const P={iso:[.8,1.15],sec:[0,Math.PI/2],side:[Math.PI/2,Math.PI/2],top:[0,.001]};
+  const t=S.type;let [th,ph]=P[v];
+  if(t==='col'&&(v==='sec'))ph=.001; // column: section = plan
+  if(t==='col'&&v==='top')ph=.001;
+  orb.th=th;orb.ph=Math.max(ph,.001);document.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));requestRender()}
+function fitCurrentView(resetOrientation=false){
+  if(!root.children.length)return;
+  const m=mem(),dims=root.children[0].userData.dims||[1,1,1],mx=Math.max(...dims)*K;
+  orb.r=mx*1.9+.5;orb.tg.set(0,assemblyMode?root.children[0].userData.targetY:S.type==='wall'?(m.T+m.H)*K/2:root.children[0].position.y,0);
+  if(resetOrientation)view('iso');
+  requestRender();
+}
+let renderFrame=0;
+function requestRender(){if(!renderFrame)renderFrame=requestAnimationFrame(frame)}
+function frame(){
+  renderFrame=0;
+  const {th,ph,r,tg}=orb;
+  camera.position.set(tg.x+r*Math.sin(ph)*Math.sin(th),tg.y+r*Math.cos(ph),tg.z+r*Math.sin(ph)*Math.cos(th));
+  exF+=(exT-exF)*.12;exList.forEach(o=>o.position.copy(o.userData.bp).addScaledVector(o.userData.ex,exS*exF));
+  camera.lookAt(tg);renderer.render(scene,camera);lab();alab();
+  if(EMBED_DEMO){orb.th+=.0012;requestRender()}
+  if(Math.abs(exT-exF)>.001)requestRender();
+}
+function resize(){const w=vp.clientWidth,h=vp.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();requestRender()}
+new ResizeObserver(resize).observe(vp);
+let drag=null;const pointers=new Map();let pinchDistance=0,pinchRadius=0;
+vp.addEventListener('contextmenu',e=>e.preventDefault());
+vp.addEventListener('pointerdown',e=>{
+  vp.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2){
+    const [a,b]=[...pointers.values()];pinchDistance=Math.hypot(a.x-b.x,a.y-b.y);pinchRadius=orb.r;drag=null;
+  }else if(pointers.size===1)drag={id:e.pointerId,x:e.clientX,y:e.clientY,pan:e.button!==0||e.shiftKey};
+});
+const finishPointer=e=>{
+  pointers.delete(e.pointerId);
+  if(pointers.size===1){const [id,p]=[...pointers.entries()][0];drag={id,x:p.x,y:p.y,pan:false}}
+  else drag=null;
+  pinchDistance=0;
+};
+vp.addEventListener('pointerup',finishPointer);vp.addEventListener('pointercancel',finishPointer);
+vp.addEventListener('pointermove',e=>{
+  if(!pointers.has(e.pointerId))return;
+  pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size>=2){
+    const [a,b]=[...pointers.values()],distance=Math.hypot(a.x-b.x,a.y-b.y);
+    if(pinchDistance>0&&distance>0){orb.r=Math.min(Math.max(pinchRadius*pinchDistance/distance,.3),120);requestRender()}
+    return;
+  }
+  if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+  document.querySelectorAll('[data-v]').forEach(b=>b.classList.remove('on'));
+  if(drag.pan){const k=orb.r*.0016,right=V3().setFromMatrixColumn(camera.matrix,0),up=V3().setFromMatrixColumn(camera.matrix,1);
+    orb.tg.addScaledVector(right,-dx*k).addScaledVector(up,dy*k)}
+  else{orb.th-=dx*.008;orb.ph=Math.min(Math.max(orb.ph-dy*.008,.001),Math.PI-.001)}requestRender()});
+vp.addEventListener('wheel',e=>{e.preventDefault();orb.r=Math.min(Math.max(orb.r*(1+Math.sign(e.deltaY)*.1),.3),120);requestRender()},{passive:false});
+
+$('#ex').oninput=e=>{exT=e.target.value/100;requestRender()};
+const norm=s=>String(s).replace(/^\ufeff/,'').replace(/["']/g,'').trim().toLowerCase();
+const fkeys=()=>FIELDS[S.type].filter(f=>f[0]!=='#').map(f=>f[0]);
+const note=t=>{$('#copied').textContent=t;setTimeout(()=>$('#copied').textContent='',2500)};
+$('#expProj').onclick=()=>{
+  try{
+    const file={format:'rcc-3d-schedule-project',version:1,exportedAt:new Date().toISOString(),project:S};
+    const blob=new Blob([JSON.stringify(file,null,2)],{type:'application/json'});
+    const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download='rcc-schedule-project.json';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);note('Project JSON saved');
+  }catch(error){console.error('Project export failed:',error);note('Project export failed: '+(error.message||'unknown error'))}
+};
+const MAX_SHARED_PROJECT_BYTES=10*1024*1024,MAX_SHARED_URL_BYTES=64*1024;
+function toBase64Url(bytes){
+  let binary='';
+  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function fromBase64Url(value){
+  if(!/^[A-Za-z0-9_-]+$/.test(value))throw new Error('Shared project link has invalid data');
+  if(value.length>Math.ceil(MAX_SHARED_URL_BYTES*4/3))throw new Error('Shared project link is too large');
+  const padded=value.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-value.length%4)%4);
+  const binary=atob(padded),bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  if(bytes.length>MAX_SHARED_URL_BYTES)throw new Error('Shared project link is too large');
+  return bytes;
+}
+async function encodeSharedProject(){
+  if(!window.CompressionStream)throw new Error('This browser does not support compressed project links; use Save JSON instead');
+  const project={format:'rcc-3d-schedule-project',version:1,exportedAt:new Date().toISOString(),project:S};
+  const source=new TextEncoder().encode(JSON.stringify(project));
+  if(source.length>MAX_SHARED_PROJECT_BYTES)throw new Error('Project is too large for a share link; use Save JSON instead');
+  const stream=new Blob([source]).stream().pipeThrough(new CompressionStream('gzip'));
+  const compressed=new Uint8Array(await new Response(stream).arrayBuffer());
+  if(compressed.length>MAX_SHARED_URL_BYTES)throw new Error('Compressed project is too large for a share link; use Save JSON instead');
+  return toBase64Url(compressed);
+}
+async function decodeSharedProject(encoded){
+  if(!window.DecompressionStream)throw new Error('This browser cannot open compressed project links; use Open JSON instead');
+  const compressed=fromBase64Url(encoded);
+  const reader=new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+  const chunks=[];let total=0;
+  while(true){
+    const {done,value}=await reader.read();if(done)break;
+    total+=value.length;
+    if(total>MAX_SHARED_PROJECT_BYTES){await reader.cancel();throw new Error('Shared project exceeds the size limit')}
+    chunks.push(value);
+  }
+  const bytes=new Uint8Array(total);let offset=0;
+  chunks.forEach(chunk=>{bytes.set(chunk,offset);offset+=chunk.length});
+  return new TextDecoder().decode(bytes);
+}
+$('#shareProj').onclick=async()=>{
+  if(!['http:','https:'].includes(location.protocol)){note('Host the app on HTTP(S) before creating a share link');return}
+  if(!window.confirm('The link will contain the complete project data and settings. Anyone who receives it can read and import that data. Continue?'))return;
+  const button=$('#shareProj');button.disabled=true;
+  try{
+    const url=new URL(location.href);url.hash='project-gzip='+await encodeSharedProject();
+    if(url.href.length>100000)throw new Error('Share link exceeds the browser-safe URL limit; use Save JSON instead');
+    try{await navigator.clipboard.writeText(url.href);note('Share link copied')}
+    catch(error){
+      console.warn('Clipboard access failed for the share link:',error);
+      if(window.prompt('Clipboard access was blocked. Copy this project link:',url.href)!==null)note('Copy the share link from the dialog');
+      else note('Share link was not copied');
+    }
+  }catch(error){console.error('Project share link failed:',error);note(error.message||'Could not create or copy share link')}
+  finally{button.disabled=false}
+};
+$('#impProj').onclick=()=>$('#projectFile').click();
+function normalizeProject(file){
+  if(!file||file.format!=='rcc-3d-schedule-project'||file.version!==1||!file.project||typeof file.project!=='object')throw new Error('Unsupported or invalid project file');
+  const source=file.project,data=source.data,cfg=source.cfg;
+  if(!data||typeof data!=='object'||!cfg||typeof cfg!=='object')throw new Error('Project data or settings are missing');
+  if(!Object.hasOwn(NAMES,source.type))throw new Error('Project member type is invalid');
+  const next={type:source.type,sel:{},data:{},cfg:{fck:+cfg.fck,fy:+cfg.fy,seismicZone:cfg.seismicZone??'Unspecified',rc:+cfg.rc,rs:+cfg.rs,rk:+cfg.rk}};
+  if(![20,25,30,35,40].includes(next.cfg.fck)||![415,500,550].includes(next.cfg.fy)||!['Unspecified','II','III','IV','V'].includes(next.cfg.seismicZone)||['rc','rs','rk'].some(k=>!Number.isFinite(next.cfg[k])||next.cfg[k]<0))throw new Error('Project concrete, steel, seismic-zone, or rate settings are invalid');
+  for(const t of Object.keys(NAMES)){
+    if(!Array.isArray(data[t])||!data[t].length)throw new Error(`Project must contain at least one ${PL[t].toLowerCase()} member`);
+    next.data[t]=data[t].map((record,index)=>{
+      if(!record||typeof record!=='object'||Array.isArray(record))throw new Error(`${PL[t]} row ${index+1} is not a member object`);
+      const m={...DEF[t],auto:0};
+      for(const field of FIELDS[t]){
+        const k=field[0];if(k==='#'||record[k]===undefined)continue;
+        if(k==='id'){if(record.id!==undefined&&record.id!==null&&typeof record.id==='object')throw new Error(`${PL[t]} row ${index+1}: mark must be text or a number`);m.id=String(record.id??m.id);continue}
+        const value=Number(record[k]);if(!Number.isFinite(value))throw new Error(`${PL[t]} row ${index+1}: ${field[1]} must be a finite number`);
+        m[k]=value;
+      }
+      return m;
+    });
+    const selected=Number(source.sel?.[t]);next.sel[t]=Number.isInteger(selected)?Math.max(0,Math.min(selected,next.data[t].length-1)):0;
+  }
+  return next;
+}
+$('#projectFile').onchange=e=>{
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const next=normalizeProject(JSON.parse(String(reader.result)));
+      if(!window.confirm('Replace the current project with the imported project? This can be undone.'))return;
+      pushUndo();S=next;save();refresh(true);note('Project imported');
+    }catch(error){note(error instanceof SyntaxError?'Project file is not valid JSON':error.message||'Project import failed')}
+    finally{e.target.value=''}
+  };
+  reader.onerror=()=>{note('Could not read the project file');e.target.value=''};
+  reader.readAsText(file,'UTF-8');
+};
+async function openSharedProject(){
+  const params=new URLSearchParams(location.hash.slice(1)),encoded=params.get('project-gzip');
+  if(!encoded)return;
+  try{
+    const next=normalizeProject(JSON.parse(await decodeSharedProject(encoded)));
+    if(window.confirm('This link contains a complete project. Replace the current project with it? This can be undone.')){
+      pushUndo();S=next;save();refresh(true);note('Shared project imported');
+    }
+  }catch(error){console.error('Shared project import failed:',error);note(error.message||'Shared project link could not be opened')}
+  finally{history.replaceState(null,'',location.pathname+location.search)}
+}
+function makeDxf(source=root){
+  const layers={conc:['CONCRETE',8],main:['MAIN_REBAR',1],sec:['SECONDARY_REBAR',8]},entities=[];
+  const dxfNum=v=>(v*1000).toFixed(3);
+  const layerOf=o=>(layers[o.userData.layer]||layers.sec)[0];
+  const coords=(p,n)=>[[10+n,dxfNum(p.x)],[20+n,dxfNum(p.y)],[30+n,dxfNum(p.z)]];
+  const group=(code,value)=>`${code}\n${value}\n`;
+  source.traverse(o=>{
+    if(!o.isMesh||!o.geometry?.attributes?.position)return;
+    const g=o.geometry,pos=g.attributes.position,index=g.index,ly=layerOf(o);
+    const count=index?index.count:pos.count;
+    for(let i=0;i+2<count;i+=3){
+      const points=[0,1,2].map(j=>{
+        const vi=index?index.getX(i+j):i+j;
+        return V3(pos.getX(vi),pos.getY(vi),pos.getZ(vi)).applyMatrix4(o.matrixWorld);
+      });
+      if(points[0].distanceToSquared(points[1])<1e-12||points[1].distanceToSquared(points[2])<1e-12||points[2].distanceToSquared(points[0])<1e-12)continue;
+      let entity=group(0,'3DFACE')+group(8,ly);
+      points.forEach((p,n)=>{entity+=coords(p,n).map(([code,value])=>group(code,value)).join('')});
+      const p=points[2];entity+=group(13,dxfNum(p.x))+group(23,dxfNum(p.y))+group(33,dxfNum(p.z));
+      entities.push(entity);
+    }
+  });
+  if(!entities.length)throw new Error('No 3D faces found to export');
+  let out=group(0,'SECTION')+group(2,'HEADER')+group(9,'$ACADVER')+group(1,'AC1015')+group(9,'$INSUNITS')+group(70,4)+group(9,'$MEASUREMENT')+group(70,1)+group(0,'ENDSEC');
+  out+=group(0,'SECTION')+group(2,'TABLES')+group(0,'TABLE')+group(2,'LAYER')+group(70,Object.keys(layers).length);
+  Object.values(layers).forEach(([name,color])=>{out+=group(0,'LAYER')+group(2,name)+group(70,0)+group(62,color)+group(6,'CONTINUOUS')});
+  out+=group(0,'ENDTAB')+group(0,'ENDSEC')+group(0,'SECTION')+group(2,'ENTITIES')+entities.join('')+group(0,'ENDSEC')+group(0,'EOF');
+  return out;
+}
+$('#dxf').onclick=()=>{
+  if(assemblyMode){note('Return to single-member view before DXF export');return}
+  const errors=validate(S.type,mem()).e;
+  if(errors.length){note('Fix input errors before DXF export');return}
+  const moved=[];
+  const oldSnaps=snaps.length,oldFB={...FB};
+  let temporaryRoot=null;
+  try{
+    root.traverse(o=>{if(o.userData.bp&&o.userData.ex){moved.push(o);o.position.copy(o.userData.bp)}});
+    root.updateMatrixWorld(true);
+    if(S.type==='wall'){
+      temporaryRoot=buildWall(eff(S.type,mem()),true);
+      temporaryRoot.updateMatrixWorld(true);
+    }
+    const content=makeDxf(temporaryRoot||root),blob=new Blob([content],{type:'application/dxf'});
+    const a=document.createElement('a'),url=URL.createObjectURL(blob),mark=String(mem().id||S.type).replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').trim();
+    a.href=url;a.download=`${mark||S.type}.dxf`;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);note('DXF exported');
+  }catch(e){console.error('DXF export failed:',e);note('DXF export failed: '+(e.message||'unknown error'))}
+  finally{
+    moved.forEach(o=>o.position.copy(o.userData.bp).addScaledVector(o.userData.ex,exS*exF));
+    root.updateMatrixWorld(true);
+    if(temporaryRoot){
+      temporaryRoot.traverse(o=>{if(o.geometry)o.geometry.dispose()});
+      snaps.length=oldSnaps;
+      Object.keys(FB).forEach(k=>delete FB[k]);Object.assign(FB,oldFB);
+    }
+  }
+};
+$('#saveImage').onclick=()=>{
+  try{
+    requestRender();
+    requestAnimationFrame(()=>{
+      try{
+        const {th,ph,r,tg}=orb;
+        camera.position.set(tg.x+r*Math.sin(ph)*Math.sin(th),tg.y+r*Math.cos(ph),tg.z+r*Math.sin(ph)*Math.cos(th));
+        camera.lookAt(tg);renderer.render(scene,camera);
+        const source=renderer.domElement,output=document.createElement('canvas');
+        output.width=source.width;output.height=source.height;
+        const ctx=output.getContext('2d');
+        if(!ctx)throw new Error('Could not create an image canvas');
+        ctx.drawImage(source,0,0);
+        const bounds=vp.getBoundingClientRect(),scale=source.width/Math.max(bounds.width,1);
+        const panel=(x,y,w,h)=>{
+          ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle='#d8d8d3';ctx.lineWidth=scale;
+          ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);
+        };
+        const badge=(text,x,y,align='left')=>{
+          ctx.font=`${12*scale}px "IBM Plex Sans", "Segoe UI", Arial, sans-serif`;
+          const pad=7*scale,h=22*scale,w=Math.min(ctx.measureText(text).width+2*pad,output.width-20*scale);
+          const left=align==='right'?x-w:align==='center'?x-w/2:x;
+          panel(left,y,w,h);ctx.fillStyle='#171716';ctx.textAlign='left';ctx.textBaseline='middle';
+          ctx.fillText(text,left+pad,y+h/2,Math.max(1,w-2*pad));
+        };
+        const title=`RCC Schedule 3D · ${NAMES[S.type]} ${mem().id}`;
+        badge(title,10*scale,10*scale);
+        document.querySelectorAll('#alabels .al').forEach(el=>{
+          if(getComputedStyle(el).display==='none')return;
+          const rect=el.getBoundingClientRect(),x=(rect.left+rect.width/2-bounds.left)*scale,y=(rect.top+rect.height/2-bounds.top)*scale;
+          const text=el.textContent.trim(),color=el.querySelector('i')?getComputedStyle(el.querySelector('i')).backgroundColor:'#171716';
+          ctx.font=`${11*scale}px "IBM Plex Sans", "Segoe UI", Arial, sans-serif`;
+          const pad=6*scale,h=20*scale,w=ctx.measureText(text).width+pad*2+10*scale;
+          panel(x-w/2,y-h/2,w,h);ctx.fillStyle=color;ctx.fillRect(x-w/2+pad,y-4*scale,8*scale,8*scale);
+          ctx.fillStyle='#171716';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,x-w/2+pad+12*scale,y,Math.max(1,w-pad*2-12*scale));
+        });
+        const info=$('#info'),infoRect=info.getBoundingClientRect();
+        if(getComputedStyle(info).display!=='none'&&info.textContent){
+          const x=(infoRect.left-bounds.left)*scale,y=(infoRect.top-bounds.top)*scale,w=infoRect.width*scale,h=infoRect.height*scale;
+          panel(x,y,w,h);ctx.font=`${12*scale}px "IBM Plex Sans", "Segoe UI", Arial, sans-serif`;
+          ctx.fillStyle='#70706a';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(info.textContent,x+8*scale,y+h/2,Math.max(1,w-16*scale));
+        }
+        const legend=$('#legend'),legendRect=legend.getBoundingClientRect();
+        if(getComputedStyle(legend).display!=='none'&&legend.children.length){
+          const x=(legendRect.left-bounds.left)*scale,y=(legendRect.top-bounds.top)*scale,w=legendRect.width*scale,h=legendRect.height*scale;
+          panel(x,y,w,h);ctx.font=`${11*scale}px "IBM Plex Sans", "Segoe UI", Arial, sans-serif`;
+          legend.querySelectorAll('span').forEach((row,index)=>{
+            const rect=row.getBoundingClientRect(),ry=(rect.top-bounds.top)*scale;
+            const swatch=row.querySelector('i'),color=swatch?getComputedStyle(swatch).backgroundColor:'#171716';
+            ctx.fillStyle=color;ctx.fillRect(x+10*scale,ry+4*scale,18*scale,4*scale);
+            ctx.fillStyle='#171716';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(row.textContent.trim(),x+34*scale,ry+7*scale,Math.max(1,w-42*scale));
+          });
+        }
+        const measure=$('#mlabel');
+        if(getComputedStyle(measure).display!=='none'&&measure.textContent){
+          const rect=measure.getBoundingClientRect(),x=(rect.left+rect.width/2-bounds.left)*scale,y=(rect.top+rect.height/2-bounds.top)*scale;
+          badge(measure.textContent.trim(),x,y,'center');
+        }
+        output.toBlob(blob=>{
+          if(!blob){note('PNG export failed: browser could not encode the image');return}
+          const a=document.createElement('a'),url=URL.createObjectURL(blob);
+          const mark=String(mem().id||S.type).replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').trim();
+          a.href=url;a.download=`${mark||S.type}.png`;document.body.appendChild(a);a.click();a.remove();
+          setTimeout(()=>URL.revokeObjectURL(url),1000);note('3D view, annotations, and legend saved as PNG');
+        },'image/png');
+      }catch(error){console.error('PNG export failed:',error);note('PNG export failed: '+(error.message||'unknown error'))}
+    });
+  }catch(error){console.error('PNG export failed:',error);note('PNG export failed: '+(error.message||'unknown error'))}
+};
+$('#exp').onclick=async()=>{const k=fkeys(),o=[k.map(x=>spreadsheetCell(x,',')).join(',')].concat(S.data[S.type].map(m=>k.map(x=>spreadsheetCell(m[x]??0,',')).join(','))).join('\r\n');try{await navigator.clipboard.writeText(o);note('CSV copied')}catch(e){note('Copy blocked by browser')}};
+$('#imp').onclick=()=>$('#file').click();
+function parseDelimited(text){
+  text=String(text).replace(/^\ufeff/,'').replace(/\r\n?/g,'\n');
+  const first=text.split('\n').find(l=>l.trim())||'';
+  const sc=['\t',';',','].find(d=>first.includes(d))||',';
+  const rows=[];
+  let row=[],field='',quoted=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(ch==='"'){if(quoted&&text[i+1]==='"'){field+='"';i++}else quoted=!quoted}
+    else if(ch===sc&&!quoted){row.push(field);field=''}
+    else if(ch==='\n'&&!quoted){row.push(field);if(row.some(v=>String(v).trim()))rows.push(row);row=[];field=''}
+    else field+=ch}
+  row.push(field);if(row.some(v=>String(v).trim()))rows.push(row);
+  return {rows,sc};
+}
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{
+  const {rows}=parseDelimited(r.result);if(rows.length<1){note('CSV file is empty');return}
+  const h=rows[0].map(norm),k=fkeys(),by={};
+  k.forEach(x=>{const lb=FIELDS[S.type].find(f=>f[0]===x)[1],i=h.findIndex(y=>y===norm(x)||y===norm(lb)||y===norm(lb.replace(/\s*\(.*?\)/,'')));if(i>=0)by[x]=i});
+  if(!Object.keys(by).length){note('No matching headers. Use Copy CSV for a template.');return}
+  let n=0;const imported=rows.slice(1);if(imported.length)pushUndo();imported.forEach(c=>{const m={...DEF[S.type]};for(const x in by){const v=String(c[by[x]]||'').trim();if(v!=='')m[x]=x==='id'?v:(Number(v) || 0)}S.data[S.type].push(m);n++});
+  S.sel[S.type]=S.data[S.type].length-1;save();refresh(true);note(n+' rows imported'+(h.length>Object.keys(by).length?`; ${h.length-Object.keys(by).length} column(s) not recognised`:'')+(S.data[S.type].some(m=>validate(S.type,m).e.length)?'; some members have errors, check the Error rows':''))};r.readAsText(f,'UTF-8');e.target.value=''};
+$('#fck').value=S.cfg.fck;$('#fy').value=S.cfg.fy;$('#seismicZone').value=S.cfg.seismicZone;
+let settingsBefore=null,formBefore=null,scheduleBefore=null,liveTimer=0;
+document.addEventListener('focusin',e=>{
+  if(e.target.matches('#fck,#fy,#seismicZone,#rc,#rs,#rk'))settingsBefore=stateSnapshot();
+  if(e.target.closest('#form input'))formBefore=stateSnapshot();
+  if(e.target.matches('#list [data-edit]'))scheduleBefore=stateSnapshot();
+});
+['fck','fy'].forEach(k=>$('#'+k).onchange=e=>{const before=settingsBefore||stateSnapshot();S.cfg[k]=+e.target.value;commitHistory(before);settingsBefore=null;save();renderQty()});
+$('#seismicZone').onchange=e=>{const before=settingsBefore||stateSnapshot();S.cfg.seismicZone=e.target.value;commitHistory(before);settingsBefore=null;save();renderQty()};
+['rc','rs','rk'].forEach(k=>{$('#'+k).value=S.cfg[k]||'';$('#'+k).oninput=e=>{if(!settingsBefore)settingsBefore=stateSnapshot();S.cfg[k]=Math.max(parseFloat(e.target.value)||0,0);clearTimeout(liveTimer);liveTimer=setTimeout(()=>{save();renderQty()},120)};$('#'+k).onchange=()=>{clearTimeout(liveTimer);commitHistory(settingsBefore);settingsBefore=null;save();renderQty()}});
+$('#search').oninput=()=>{schedulePage=0;renderList()};
+$('#sort').onchange=()=>{schedulePage=0;renderList()};
+$('#filter').onchange=()=>{schedulePage=0;renderList()};
+$('#listPrev').onclick=()=>{schedulePage=Math.max(0,schedulePage-1);renderList()};
+$('#listNext').onclick=()=>{schedulePage++;renderList()};
+$('#assembly').onclick=()=>{
+  const previous=assemblyMode;assemblyMode=!assemblyMode;
+  try{build(true)}catch(error){
+    assemblyMode=previous;console.error('Assembly view failed:',error);note(error.message||'Assembly view could not be built');
+    try{build(true)}catch(renderError){console.error('Could not restore member view:',renderError);$('#info').textContent='3D render failed: '+(renderError.message||'unknown error')}
+  }
+};
+['assemblyBaysX','assemblyBaysZ'].forEach(id=>$('#'+id).onchange=()=>{
+  if(!assemblyMode)return;
+  try{build(true)}catch(error){console.error('Assembly grid update failed:',error);note(error.message||'Assembly grid could not be updated')}
+});
+$('#qsel').addEventListener('click',e=>{
+  const b=e.target.closest('[data-field]');if(!b)return;
+  const field=$(`#form [data-k="${CSS.escape(b.dataset.field)}"]`);
+  if(field){field.scrollIntoView({behavior:'smooth',block:'center'});field.focus();field.classList.add('bad');setTimeout(()=>field.classList.remove('bad'),900)}
+});
+$('#units').onchange=e=>{
+  displayUnits=e.target.value==='in'?'in':'mm';
+  try{localStorage.setItem('rcc3d_units_v1',displayUnits)}catch(error){console.error('Could not save the display-unit preference:',error);note('Unit preference could not be saved in this browser')}
+  renderList();renderForm();build(false);
+};
+$('#list').addEventListener('change',e=>{
+  const field=e.target.dataset.edit;if(!field)return;
+  const index=+e.target.dataset.i,member=S.data[S.type][index];if(!member)return;
+  const before=scheduleBefore||stateSnapshot();
+  member[field]=field==='id'?e.target.value:field==='nos'?Math.max(1,Math.floor(+e.target.value||1)):(fromDisplay(Number(e.target.value)||0,field));
+  commitHistory(before);scheduleBefore=null;
+  S.sel[S.type]=index;save();refresh(true);
+});
+$('#ann').onclick=e=>{annOn=!annOn;e.target.classList.toggle('on',annOn);applyAnn();requestRender()};
+$('#print').onclick=()=>{renderQty();renderReport();window.print()};
+$('#reset').onclick=e=>{const b=e.target;if(b.dataset.arm){
+  pushUndo();S={type:'beam',sel:{beam:0,col:0,wall:0,foot:0,slab:0},data:Object.fromEntries(Object.keys(NAMES).map(t=>[t,[{...DEF[t]}]])),cfg:{fck:25,fy:500,seismicZone:'Unspecified',rc:0,rs:0,rk:0}};
+  save();refresh(true);b.textContent='Reset all';delete b.dataset.arm;
+ }else{b.dataset.arm=1;b.textContent='Click again to reset';setTimeout(()=>{delete b.dataset.arm;b.textContent='Reset all'},3000)}};
+/* ---------- measure ---------- */
+const mg=new THREE.Group();scene.add(mg);
+let measuring=false,pts=[],dn=null;
+const mmv=v=>lengthText(v*1000,displayUnits==='in'?2:0);
+function clearMeasure(){pts=[];while(mg.children.length){const o=mg.children.pop();if(o.geometry)o.geometry.dispose()}$('#mlabel').style.display='none'}
+function addPt(w){
+  pts.push(w.clone());
+  const s=new THREE.Mesh(new THREE.SphereGeometry(Math.max(orb.r*.006,.005),12,8),new THREE.MeshBasicMaterial({color:0x000000,depthTest:false}));
+  s.position.copy(w);s.renderOrder=10;mg.add(s);
+  if(pts.length===2){const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x000000,depthTest:false}));l.renderOrder=10;mg.add(l)}}
+function pick(e){
+  const r=vp.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  let best=null,bd=14;
+  if(exF<.02)snaps.forEach(s=>{if(!layerOn[s.l])return;const w=s.o.localToWorld(s.p.clone()),q=w.clone().project(camera);
+    const d=Math.hypot((q.x+1)/2*r.width-mx,(1-q.y)/2*r.height-my);if(q.z<1&&d<bd){bd=d;best=w}});
+  if(!best){const rc=new THREE.Raycaster();rc.setFromCamera(new THREE.Vector2(mx/r.width*2-1,-(my/r.height)*2+1),camera);
+    const h=rc.intersectObject(root,true).find(h=>h.object.isMesh&&(!h.object.userData.layer||layerOn[h.object.userData.layer]));if(h)best=h.point}
+  if(!best)return;
+  if(pts.length>=2)clearMeasure();
+  addPt(best)}
+function lab(){
+  const el=$('#mlabel');if(pts.length<2){el.style.display='none';return}
+  const m=pts[0].clone().add(pts[1]).multiplyScalar(.5).project(camera),r=vp.getBoundingClientRect(),d=pts[1].clone().sub(pts[0]);
+  el.style.display='block';el.style.left=(m.x+1)/2*r.width+'px';el.style.top=(1-m.y)/2*r.height+'px';
+  el.textContent=`${mmv(d.length())} mm  (X ${mmv(Math.abs(d.x))}, Y ${mmv(Math.abs(d.y))}, Z ${mmv(Math.abs(d.z))})`}
+vp.addEventListener('pointerdown',e=>dn={x:e.clientX,y:e.clientY});
+vp.addEventListener('click',e=>{if(measuring&&dn&&Math.hypot(e.clientX-dn.x,e.clientY-dn.y)<5)pick(e)});
+$('#meas').onclick=()=>{measuring=!measuring;$('#meas').classList.toggle('on',measuring);vp.style.cursor=measuring?'crosshair':'';
+  if(measuring)$('#info').textContent='Measure: click two points. Snaps to bar ends and concrete corners. Esc clears.';else build(false)};
+addEventListener('keydown',e=>{if(e.key==='Escape')clearMeasure()});
+
+/* ---------- events ---------- */
+let activeChallenge=null,challengeLayers=null,challengeAssemblyMode=null;
+function geometryText(type,m){
+  if(type==='beam')return `${fmt(m.b,0)} × ${fmt(m.D,0)} × ${fmt(m.L,0)} mm`;
+  if(type==='col')return `${fmt(m.b,0)} × ${fmt(m.D,0)} × ${fmt(m.H,0)} mm`;
+  return `${fmt(m.L,0)} × ${fmt(m.B,0)} × ${fmt(m.T,0)} mm`;
+}
+function loadPreset(id){
+  const preset=PRESETS[id];if(!preset){note('Choose a textbook example first');return}
+  pushUndo();S.type=preset.type;S.data[preset.type]=[{...preset.member}];S.sel[preset.type]=0;
+  activeChallenge=null;document.body.classList.remove('challenge-mode');save();refresh(true);note(`${preset.title} loaded`);
+}
+function renderChallenge(){
+  if(!activeChallenge)return;
+  const {preset,target,answers}=activeChallenge;
+  $('#challengeTitle').textContent=`Hidden-answer exercise: ${preset.title}`;
+  $('#challengePrompt').textContent=`${preset.prompt} Section dimensions: ${geometryText(preset.type,target)}. Enter your proposed bar schedule; feedback is shown without revealing expected values.`;
+  $('#challengeAnswers').innerHTML=preset.fields.map(k=>{
+    const field=FIELDS[preset.type].find(f=>f[0]===k);
+    return `<label>${escapeHTML(field?fieldLabel(field):k)}<input type="number" min="0" step="any" data-answer="${k}" value="${escapeHTML(answers[k]??'')}"></label>`;
+  }).join('');
+  $('#challengeFeedback').textContent='';
+}
+function startChallenge(){
+  const id=$('#preset').value,preset=PRESETS[id];if(!preset){note('Choose a textbook example first');return}
+  const originalState=JSON.stringify(S),exerciseState=JSON.parse(originalState),target={...preset.member};
+  exerciseState.type=preset.type;exerciseState.data[preset.type]=[{...target}];exerciseState.sel[preset.type]=0;
+  activeChallenge={id,preset,target,answers:{},originalState};
+  S=exerciseState;invalidateDuplicateIndex();
+  challengeLayers={...layerOn};challengeAssemblyMode=assemblyMode;assemblyMode=false;document.body.classList.add('challenge-mode');$('#app').dataset.mobilePanel='input';
+  document.querySelectorAll('#mobileNav [data-panel]').forEach(button=>button.classList.toggle('on',button.dataset.panel==='input'));
+  layerOn.conc=true;layerOn.main=false;layerOn.sec=false;applyLayers();renderChallenge();refresh(true);
+}
+function endChallenge(){
+  if(!activeChallenge)return;
+  S=JSON.parse(activeChallenge.originalState);invalidateDuplicateIndex();
+  activeChallenge=null;document.body.classList.remove('challenge-mode');
+  if(challengeLayers)Object.assign(layerOn,challengeLayers);
+  challengeLayers=null;if(challengeAssemblyMode!==null)assemblyMode=challengeAssemblyMode;challengeAssemblyMode=null;refresh(true);assignmentChecks();
+}
+function printAssignment(){
+  const preset=activeChallenge?.preset,member=activeChallenge?.target||mem(),type=preset?.type||S.type,name=preset?.title||`${NAMES[type]} ${member.id}`;
+  const headings=['Bar group / shape','Dia (mm)','Nos','Cut length (mm)','Total length (m)','Weight (kg)'];
+  const tableRows=Array.from({length:6},()=>`<tr>${headings.map(()=>'<td style="height:10mm"></td>').join('')}</tr>`).join('');
+  const assignmentTable=`<table><thead><tr>${headings.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table>`;
+  $('#assignmentSheet').innerHTML=`<h1>Rebar3D · Assignment</h1><p><strong>${escapeHTML(name)}</strong> · Section ${escapeHTML(geometryText(type,member))}</p><p>Student: ______________________________ &nbsp; Class: __________________ &nbsp; Date: __________________</p><p>Sketch or enter the reinforcement schedule. Derive cut length and steel mass for each bar group; state assumptions and cite relevant clauses from the applicable standard.</p>${assignmentTable}<h2>Worked derivation</h2><p>Cut length formula and substitutions:</p><div class="write-line"></div><div class="write-line"></div><p>Steel unit mass and total-weight calculation (d²/162):</p><div class="write-line"></div><div class="write-line"></div><h2>Code reference / assumptions</h2><div class="write-line"></div><p style="font-size:9pt;margin-top:8mm">Teaching and screening aid only — verify applicable standards and approved drawings. Not for certified design or fabrication.</p>`;
+  document.body.classList.add('print-assignment');
+  const done=()=>{document.body.classList.remove('print-assignment');removeEventListener('afterprint',done)};
+  addEventListener('afterprint',done);window.print();setTimeout(done,1500);
+}
+function refresh(fit){
+  $('#units').value=displayUnits;
+  $('#fck').value=S.cfg.fck;$('#fy').value=S.cfg.fy;$('#seismicZone').value=S.cfg.seismicZone;
+  ['rc','rs','rk'].forEach(k=>{$('#'+k).value=S.cfg[k]||''});
+  renderTabs();renderList();renderForm();renderQty();
+  try{build(fit)}catch(e){console.error('3D render failed:',e);$('#info').textContent='3D render skipped: '+(e&&e.message?e.message:'invalid member data')}
+  setHistoryButtons();assignmentChecks();
+}
+$('#loadPreset').onclick=()=>loadPreset($('#preset').value);
+$('#startChallenge').onclick=startChallenge;
+$('#challengeAnswers').addEventListener('input',e=>{
+  const field=e.target.dataset.answer;if(!field||!activeChallenge)return;
+  activeChallenge.answers[field]=e.target.value;$('#challengeFeedback').textContent='';
+});
+$('#checkChallenge').onclick=()=>{
+  if(!activeChallenge)return;
+  const results=activeChallenge.preset.fields.map(k=>{
+    const value=activeChallenge.answers[k],expected=Number(activeChallenge.target[k]);
+    return {k,ok:value!==undefined&&value!==''&&Number.isFinite(Number(value))&&Math.abs(Number(value)-expected)<.01};
+  });
+  const passed=results.filter(result=>result.ok).length;
+  $('#challengeFeedback').innerHTML=`<p><strong>${passed===results.length?'Schedule matches the exercise.':`${passed} of ${results.length} entries match.`}</strong> ${passed===results.length?'Good work. Review your derivation and applicable clauses.':'Review the unmatched entries and try again; expected values remain hidden.'}</p>`+results.map(result=>`<div class="ck"><b>${result.ok?'Matched':'Review'}</b> ${escapeHTML(FIELDS[activeChallenge.preset.type].find(f=>f[0]===result.k)?.[1]||result.k)}</div>`).join('');
+};
+$('#endChallenge').onclick=endChallenge;$('#challengePrint').onclick=printAssignment;$('#printAssignment').onclick=printAssignment;
+$('#buildToggle').onclick=()=>{
+  buildUpMode=!buildUpMode;buildStage=buildUpMode?0:4;updateBuildStage();requestRender();
+};
+$('#buildStage').oninput=e=>{buildStage=+e.target.value;updateBuildStage();requestRender()};
+$('#projectorToggle').onclick=()=>{
+  const on=document.body.classList.toggle('projector-mode');$('#projectorToggle').textContent=`Class / projector mode: ${on?'on':'off'}`;$('#projectorToggle').classList.toggle('on',on);
+};
+$('#mobileNav').addEventListener('click',e=>{
+  const button=e.target.closest('[data-panel]');if(!button)return;
+  if(document.body.classList.contains('challenge-mode')&&button.dataset.panel!=='input')return;
+  $('#app').dataset.mobilePanel=button.dataset.panel;
+  document.querySelectorAll('#mobileNav [data-panel]').forEach(b=>b.classList.toggle('on',b===button));
+  requestAnimationFrame(resize);
+});
+$('#tabs').addEventListener('click',e=>{const t=e.target.dataset.t;if(t){S.type=t;save();refresh(true)}});
+$('#list').addEventListener('click',e=>{if(e.target.closest('[data-edit]'))return;const tr=e.target.closest('tr[data-i]');if(tr){S.sel[S.type]=+tr.dataset.i;save();refresh(true)}});
+let formTimer=0;
+const updateFormLive=()=>{clearTimeout(formTimer);formTimer=setTimeout(()=>{save();renderList();renderQty();build(false)},180)};
+$('#form').addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;if(!formBefore)formBefore=stateSnapshot();mem()[k]=k==='id'?e.target.value:fromDisplay(parseFloat(e.target.value)||0,k);updateFormLive()});
+$('#form').addEventListener('change',e=>{if(!e.target.dataset.k)return;clearTimeout(formTimer);commitHistory(formBefore);formBefore=null;save();renderList();renderQty();build(false)});
+$('#undo').onclick=()=>undo();$('#redo').onclick=()=>redo();
+$('#add').onclick=()=>{pushUndo();const a=S.data[S.type];a.push({...DEF[S.type],id:DEF[S.type].id.replace(/\d+$/,'')+(a.length+1)});S.sel[S.type]=a.length-1;save();refresh(true)};
+$('#dup').onclick=()=>{pushUndo();const a=S.data[S.type];a.push({...mem(),id:mem().id+'-copy'});S.sel[S.type]=a.length-1;save();refresh(true)};
+$('#del').onclick=()=>{const a=S.data[S.type];if(a.length<2)return;pushUndo();a.splice(S.sel[S.type],1);S.sel[S.type]=Math.max(0,S.sel[S.type]-1);save();refresh(true)};
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>view(b.dataset.v));
+document.querySelectorAll('[data-camera]').forEach(b=>b.onclick=()=>b.dataset.camera==='reset'?fitCurrentView(true):fitCurrentView(false));
+document.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{const l=b.dataset.l;layerOn[l]=!layerOn[l];b.classList.toggle('on',layerOn[l]);applyLayers();requestRender()});
+document.querySelectorAll('[data-isolate]').forEach(b=>b.onclick=()=>{
+  const mode=b.dataset.isolate;
+  if(mode==='reinforcement')setLayers(false,true,true);
+  else if(mode==='concrete')setLayers(true,false,false);
+  else setLayers(true,true,true);
+});
+document.addEventListener('keydown',e=>{
+  if(activeChallenge)return;
+  if(!(e.ctrlKey||e.metaKey)||!['z','y'].includes(e.key.toLowerCase()))return;
+  e.preventDefault();document.activeElement?.blur();
+  if(e.key.toLowerCase()==='z'&&!e.shiftKey)undo();else redo();
+});
+$('#copy').onclick=async()=>{
+  const s=window._sum;let o='Type\tNos\tConcrete (Cum)\tShuttering (Sqm)\tSteel (kg)\n';
+  for(const t in s.tot)o+=`${NAMES[t]}s\t${s.tot[t].n}\t${s.tot[t].c.toFixed(2)}\t${s.tot[t].s.toFixed(2)}\t${s.tot[t].k.toFixed(3)}\n`;
+  o+=`Total\t\t${s.C.toFixed(2)}\t${s.SH.toFixed(2)}\t${s.K.toFixed(3)}\n\nDia (mm)\tLength (m)\tWeight (kg)\n`;
+  Object.keys(s.byDia).map(Number).sort((a,b)=>a-b).forEach(d=>o+=`${d}\t${s.byDia[d].l.toFixed(3)}\t${s.byDia[d].k.toFixed(3)}\n`);
+  o+='\nBBS\nMember\tBar\tProfile (app ref)\tShape dimensions (mm)\tDia (mm)\tNos per member\tMembers\tTotal nos\tCut length (m)\tTotal length (m)\tWeight (kg)\n'+s.bb.map(r=>r.map((v,i)=>spreadsheetCell(i>=8?(+v).toFixed(3):v,'\t')).join('\t')).join('\n');if(s.bad.length)o+='\nExcluded (input errors): '+s.bad.map(x=>spreadsheetCell(x,'\t')).join(', ');try{await navigator.clipboard.writeText(o);$('#copied').textContent='Copied'}catch(e){$('#copied').textContent='Copy blocked by browser'}
+  setTimeout(()=>$('#copied').textContent='',2000)};
+addEventListener('message',e=>{
+  if(!EMBED_DEMO||e.source!==parent||e.origin!==location.origin||!e.data||e.data.type!=='rebar3d-demo')return;
+  if(e.data.action==='section')view('sec');
+  else if(e.data.action==='explode'){exT=exT>.1?0:.65;$('#ex').value=Math.round(exT*100);requestRender()}
+  else if(e.data.action==='reset'){exT=0;$('#ex').value=0;view('iso')}
+});
+refresh(true);resize();openSharedProject();
+</script>
+</body>
+</html>
