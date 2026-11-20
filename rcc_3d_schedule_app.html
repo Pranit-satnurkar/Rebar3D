@@ -258,7 +258,7 @@ function pathProfile(points){
 }
 function calc(type,m){if(validate(type,m).e.length)return {conc:0,shut:0,bars:[],kg:0,bad:true};m=eff(type,m);
   const bars=[],add=(name,d,n,len,layer,profile='Straight (ST)',dims=`Cut length ${fmt(len,0)} mm`)=>{if(+d>0&&n>0)bars.push({name,d:+d,n,len,layer,profile,dims})};
-  let conc,shut;if(type==='foot'||type==='slab'){const q=plate(m,type,add);conc=q.conc;shut=q.shut}else 
+  let conc,shut;if(type==='foot'||type==='slab'){const q=plate(m,type,add);conc=q.conc;shut=q.shut}else
   if(type==='beam'){
     const {b,D,L,c,topN,topD,botN,botD,sideN,sideD,stD,s1,s2}=m;
     const D2=+m.D2||D,Dd=(D+D2)/2,Da=Dd-(m.ds||0);conc=b*Da*L/1e9;shut=(b*Math.hypot(L,D2-D)+2*Da*L)/1e6;
